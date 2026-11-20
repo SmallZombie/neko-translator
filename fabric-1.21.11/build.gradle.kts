@@ -1,9 +1,11 @@
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	id("net.fabricmc.fabric-loom-remap")
 	`maven-publish`
-	id("org.jetbrains.kotlin.jvm") version "2.4.21"
+	id("org.jetbrains.kotlin.jvm")
 }
 
 repositories {
@@ -25,15 +27,21 @@ loom {
 	}
 }
 
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft("com.mojang:minecraft:${providers.gradleProperty("minecraft_version").get()}")
-    mappings(loom.officialMojangMappings())
-	modImplementation("net.fabricmc:fabric-loader:${providers.gradleProperty("loader_version").get()}")
+/** Shared properties live in the root gradle.properties, module specific ones as "[module].[key]". */
+fun prop(key: String): String =
+	providers.gradleProperty("${project.name}.$key").orElse(providers.gradleProperty(key)).get()
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation("net.fabricmc.fabric-api:fabric-api:${providers.gradleProperty("fabric_api_version").get()}")
-    modImplementation("net.fabricmc:fabric-language-kotlin:${providers.gradleProperty("fabric_kotlin_version").get()}")
+dependencies {
+	minecraft("com.mojang:minecraft:${prop("minecraft_version")}")
+	// 1.21.x is still obfuscated, so official Mojang mappings are what the code is written against.
+	mappings(loom.officialMojangMappings())
+
+	modImplementation("net.fabricmc:fabric-loader:${prop("loader_version")}")
+	modImplementation("net.fabricmc.fabric-api:fabric-api:${prop("fabric_api_version")}")
+	modImplementation("net.fabricmc:fabric-language-kotlin:${prop("fabric_kotlin_version")}")
+
+	// Loader/version independent logic, merged into this jar below.
+	implementation(project(":common"))
 }
 
 tasks.processResources {
@@ -43,6 +51,15 @@ tasks.processResources {
 	filesMatching("fabric.mod.json") {
 		expand("version" to version)
 	}
+}
+
+// 1.21.11 runs on Java 21; the common module is built for the same target.
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+
+	withSourcesJar()
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -55,23 +72,27 @@ kotlin {
 	}
 }
 
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
+val commonMain = project(":common").extensions.getByType<SourceSetContainer>()["main"]
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+// Keeps jar, remapJar and the source jars named like the other platform modules.
+base {
+	archivesName.set(rootProject.name)
 }
 
 tasks.jar {
-	val projectName = project.name
+	val projectName = rootProject.name
 	inputs.property("projectName", projectName)
 
-	from("LICENSE") {
+	// The common module is not a mod on its own: its classes are merged into this jar.
+	from(commonMain.output)
+
+	from(rootProject.file("LICENSE")) {
 		rename { "${it}_$projectName" }
 	}
+}
+
+tasks.named<Jar>("sourcesJar") {
+	from(commonMain.allSource)
 }
 
 // configure the maven publication
@@ -84,9 +105,5 @@ publishing {
 
 	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
 	}
 }

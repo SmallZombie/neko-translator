@@ -35,8 +35,9 @@ class NekoConfig {
     @Volatile
     var useOthers: Boolean = false
 
+    /** Translate new chat lines without a click. Off by default: one click is cheap, API calls are not. */
     @Volatile
-    var autoTranslate: Boolean = true
+    var autoTranslate: Boolean = false
 
     /** Target language code, or [AUTO_LANGUAGE] to follow the client language. */
     @Volatile
@@ -82,7 +83,7 @@ class NekoConfig {
         apiKey = root.string("apiKey", "")
         allowOthers = root.bool("allowOthers", false)
         useOthers = root.bool("useOthers", false)
-        autoTranslate = root.bool("autoTranslate", true)
+        autoTranslate = root.bool("autoTranslate", false)
         targetLanguage = root.string("targetLanguage", AUTO_LANGUAGE)
         reasoningEffort = root.string("reasoningEffort", "off")
         playersFromJson(root.getAsJsonArray("allowed"), allowed)

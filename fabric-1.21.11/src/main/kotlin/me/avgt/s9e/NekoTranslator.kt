@@ -1,5 +1,6 @@
 package me.avgt.s9e
 
+import me.avgt.s9e.net.ServerRelay
 import net.fabricmc.api.ModInitializer
 import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
@@ -10,11 +11,11 @@ object NekoTranslator : ModInitializer {
 	private val LOGGER = LoggerFactory.getLogger(MOD_ID)
 
 	override fun onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
+		// Registers the relay payloads on both sides and installs the server side relay.
+		// The relay never inspects the payload: it only forwards bytes between players.
+		ServerRelay.register()
 
-		LOGGER.info("Hello Fabric world!")
+		LOGGER.info("Neko Translator relay ready")
 	}
 
 	fun id(path: String): Identifier

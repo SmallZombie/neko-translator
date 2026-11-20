@@ -3,7 +3,9 @@
 	"package": "me.avgt.s9e.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ChatComponentAccess",
+		"ChatComponentMixin",
+		"ChatScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

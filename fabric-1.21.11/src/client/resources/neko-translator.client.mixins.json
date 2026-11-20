@@ -3,9 +3,11 @@
 	"package": "me.avgt.s9e.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"BookViewScreenMixin",
 		"ChatComponentAccess",
 		"ChatComponentMixin",
-		"ChatScreenMixin"
+		"ChatScreenMixin",
+		"ScreenAccess"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.gui.components.ChatComponent
+import net.minecraft.client.gui.screens.inventory.BookViewScreen
 import net.minecraft.network.chat.Component
 
 object NekoTranslatorClient : ClientModInitializer {
@@ -45,4 +46,31 @@ object NekoTranslatorClient : ClientModInitializer {
     fun onMarkerClick(id: Long) {
         Neko.chat.onClick(id)
     }
+
+    // --- book screen -------------------------------------------------------------------
+
+    /** Whether the book translate button is shown at all (follows the global `[T]` switch). */
+    @JvmStatic
+    fun bookVisible(): Boolean = Neko.books.visible()
+
+    /** Called before a book frame is drawn; notices page turns and starts auto translation. */
+    @JvmStatic
+    fun onBookFrame(screen: BookViewScreen, page: Int, original: Component) {
+        Neko.books.onFrame(screen, page, original)
+    }
+
+    @JvmStatic
+    fun bookVersion(screen: BookViewScreen): Int = Neko.books.version(screen)
+
+    /** Replaces the page text with its translation while the page is shown translated. */
+    @JvmStatic
+    fun bookPage(screen: BookViewScreen, original: Component): Component = Neko.books.display(screen, original)
+
+    @JvmStatic
+    fun onBookButton(screen: BookViewScreen) {
+        Neko.books.click(screen)
+    }
+
+    @JvmStatic
+    fun bookColor(screen: BookViewScreen): Int = Neko.books.markerColor(screen)
 }

@@ -5,6 +5,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import me.avgt.s9e.client.book.BookTranslator
 import me.avgt.s9e.client.chat.ChatTranslator
 import me.avgt.s9e.client.peer.FabricPeerTransport
 import me.avgt.s9e.client.util.Feed
@@ -35,6 +36,8 @@ object Neko {
     lateinit var peers: PeerManager
         private set
     lateinit var chat: ChatTranslator
+        private set
+    lateinit var books: BookTranslator
         private set
 
     /** Latest model list fetched from the configured endpoint. */
@@ -73,6 +76,7 @@ object Neko {
             { scheduleCacheSave() },
         ) { peers }
         chat = ChatTranslator(config, coordinator)
+        books = BookTranslator(config, coordinator)
 
         NekoLog.info("Neko Translator loaded (cache entries: ${cache.size()})")
     }

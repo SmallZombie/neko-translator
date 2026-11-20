@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"package": "me.avgt.s9e.client.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"ChatComponentAccess",
+		"ChatComponentMixin",
+		"ChatScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

@@ -184,7 +184,8 @@ class ChatTranslator(
         }
 
         val gui = entry.gui ?: return
-        val access = minecraft.gui.chat as? ChatComponentAccess ?: return
+        val chat = minecraft.gui.chat
+        val access = chat as? ChatComponentAccess ?: return
         val messages = access.nekoAllMessages()
         val index = messages.indexOfFirst { it === gui }
 
@@ -198,7 +199,17 @@ class ChatTranslator(
         val replacement = GuiMessage(previous.addedTime(), buildContent(entry), previous.signature(), previous.source(), previous.tag())
         messages[index] = replacement
         entry.gui = replacement
+
+        // refreshTrimmedMessages() re-splits every message. While the chat screen is open and
+        // scrolled up, that re-split counts each rebuilt line as a new arrival and scrolls one step
+        // per line, which drags the view back to the bottom. Restore the position around the rebuild.
+        val scroll = access.nekoChatScrollbarPos()
+        val unseen = access.nekoNewMessageSinceScroll()
         access.nekoRefresh()
+        access.nekoSetChatScrollbarPos(scroll)
+        access.nekoSetNewMessageSinceScroll(unseen)
+        // Clamp to the rebuilt content the same way a normal scroll would.
+        chat.scrollChat(0)
     }
 
     private fun buildContent(entry: Entry): Component {

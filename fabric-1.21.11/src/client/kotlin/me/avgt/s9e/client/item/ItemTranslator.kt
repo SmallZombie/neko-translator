@@ -5,19 +5,13 @@ import me.avgt.s9e.client.chat.StyledSegment
 import me.avgt.s9e.client.chat.StyledText
 import me.avgt.s9e.client.lang.LanguageKeys
 import me.avgt.s9e.client.mixin.AbstractContainerScreenAccess
-import me.avgt.s9e.client.util.Feed
+import me.avgt.s9e.client.translate.LineGroup
 import me.avgt.s9e.common.config.NekoConfig
-import me.avgt.s9e.common.text.NekoText
 import me.avgt.s9e.common.translate.TranslationCoordinator
-import me.avgt.s9e.common.translate.TranslationResult
-import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.Style
-import net.minecraft.network.chat.contents.PlainTextContents
-import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
@@ -45,27 +39,21 @@ class ItemTranslator(
     private val coordinator: TranslationCoordinator,
     private val language: () -> String,
 ) {
-    enum class State { IDLE, TRANSLATING, DONE, FAILED }
-
     /** One tooltip line together with the styled segments it is built from. */
     private class Line(val component: Component, val segments: List<StyledSegment>, val needsTranslation: Boolean) {
         val payload: String = StyledText.payload(segments)
         val requestable: Boolean = needsTranslation && payload.isNotBlank()
     }
 
-    private class Parsed(val lines: List<Line>, val payloads: List<String>, val key: String)
+    private class Parsed(val lines: List<Line>, val payloads: List<String>, val key: String) {
+        val hasWork: Boolean = lines.any { it.requestable }
+    }
 
     /** Tooltip lines of one stack, cached because the HUD asks for them on every frame. */
     private class Snapshot(val parsed: Parsed, val advanced: Boolean, val language: String, val generation: Int)
 
-    private class Entry(val payloads: List<String>, val requestable: BooleanArray) {
-        val translations: Array<String?> = arrayOfNulls(payloads.size)
-        var state: State = State.IDLE
-        var showingOriginal: Boolean = false
-    }
-
-    private val entries = object : LinkedHashMap<String, Entry>() {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>): Boolean =
+    private val entries = object : LinkedHashMap<String, LineGroup>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, LineGroup>): Boolean =
             size > MAX_ENTRIES
     }
 
@@ -92,7 +80,7 @@ class ItemTranslator(
         if (minecraft.screen !is AbstractContainerScreen<*>) return lines
 
         val parsed = parse(lines, language())
-        if (!parsed.hasWork()) return lines
+        if (!parsed.hasWork) return lines
 
         val entry = entries[parsed.key]
         val result = ArrayList<Component>(parsed.lines.size)
@@ -101,7 +89,7 @@ class ItemTranslator(
             result.add(translated(entry, line, index) ?: line.component)
         }
 
-        result[0] = result[0].copy().append(Component.literal(" ")).append(marker(entry))
+        result[0] = result[0].copy().append(Component.literal(" ")).append(entry?.marker() ?: LineGroup.idleMarker())
         return result
     }
 
@@ -110,11 +98,11 @@ class ItemTranslator(
         if (!config.enabled || stack.isEmpty()) return original
 
         val parsed = snapshot(stack).parsed
-        if (!parsed.hasWork()) return original
+        if (!parsed.hasWork) return original
 
         val entry = entries[parsed.key]
         val name = parsed.lines.firstOrNull()?.let { translated(entry, it, 0) } ?: original
-        return name.copy().append(Component.literal(" ")).append(marker(entry))
+        return name.copy().append(Component.literal(" ")).append(entry?.marker() ?: LineGroup.idleMarker())
     }
 
     /** Triggered once per client tick: noticed hovers and the item held in the main hand. */
@@ -154,22 +142,9 @@ class ItemTranslator(
         if (stack.isEmpty()) return false
 
         val parsed = snapshot(stack).parsed
-        if (!parsed.hasWork()) return false
+        if (!parsed.hasWork) return false
 
-        val entry = entryOf(parsed)
-        when (entry.state) {
-            State.IDLE -> start(entry)
-            // While a translation is running a click does nothing on purpose, like the chat marker.
-            State.TRANSLATING -> Unit
-            State.DONE -> entry.showingOriginal = !entry.showingOriginal
-            State.FAILED -> {
-                for (index in entry.requestable.indices) {
-                    if (entry.requestable[index]) coordinator.forgetFailure(entry.payloads[index])
-                }
-                start(entry)
-            }
-        }
-
+        entryOf(parsed).toggle(coordinator)
         return true
     }
 
@@ -203,10 +178,10 @@ class ItemTranslator(
 
     private fun startIfIdle(stack: ItemStack) {
         val parsed = snapshot(stack).parsed
-        if (!parsed.hasWork()) return
+        if (!parsed.hasWork) return
 
         val entry = entryOf(parsed)
-        if (entry.state == State.IDLE) start(entry)
+        if (entry.state == LineGroup.State.IDLE) entry.start(coordinator)
     }
 
     private fun clearHover() {
@@ -220,96 +195,18 @@ class ItemTranslator(
         return (screen as AbstractContainerScreenAccess).nekoHoveredSlot()
     }
 
-    private fun entryOf(parsed: Parsed): Entry = entries.getOrPut(parsed.key) {
-        Entry(parsed.payloads, BooleanArray(parsed.lines.size) { parsed.lines[it].requestable })
-    }
-
-    private fun start(entry: Entry) {
-        if (entry.state == State.TRANSLATING) return
-
-        val indexes = entry.requestable.indices.filter { entry.requestable[it] }
-        entry.translations.fill(null)
-        entry.showingOriginal = false
-
-        if (indexes.isEmpty()) {
-            entry.state = State.DONE
-            return
-        }
-
-        entry.state = State.TRANSLATING
-        var remaining = indexes.size
-        var failure: NekoText? = null
-
-        for (index in indexes) {
-            coordinator.requestForChat(entry.payloads[index]).whenComplete { result, _ ->
-                Minecraft.getInstance().execute {
-                    when (result) {
-                        is TranslationResult.Ok -> entry.translations[index] = result.text
-                        is TranslationResult.Err -> if (failure == null) failure = result.message
-                        null -> if (failure == null) failure = NekoText.of("neko-translator.error.translate_failed")
-                    }
-
-                    remaining--
-                    if (remaining == 0) {
-                        val message = failure
-                        entry.state = if (message == null) State.DONE else State.FAILED
-                        if (message != null) Feed.error(message)
-                    }
-                }
-            }
-        }
+    private fun entryOf(parsed: Parsed): LineGroup = entries.getOrPut(parsed.key) {
+        LineGroup(parsed.payloads, BooleanArray(parsed.lines.size) { parsed.lines[it].requestable })
     }
 
     private fun parse(components: List<Component>, language: String): Parsed {
         // A translation is only pointless when the target is what the client already shows.
-        val skipLocalized = language == clientLanguage()
+        val skipLocalized = language == LanguageKeys.clientLanguage()
         val lines = components.map { component ->
-            Line(component, StyledText.flatten(component), !skipLocalized || hasForeignText(component))
+            Line(component, StyledText.flatten(component), !skipLocalized || LanguageKeys.hasForeignText(component))
         }
         val payloads = lines.map { it.payload }
-        return Parsed(lines, payloads, keyOf(language, payloads))
-    }
-
-    private fun clientLanguage(): String = Minecraft.getInstance().options.languageCode.lowercase()
-
-    /**
-     * True when the line still contains text the client language has no translation for: a
-     * literal (custom name, lore, text a mod built by hand) or a key only `en_us` provides.
-     */
-    private fun hasForeignText(component: Component): Boolean {
-        when (val contents = component.contents) {
-            is TranslatableContents -> {
-                if (!LanguageKeys.isLocalized(contents.key)) return true
-                for (arg in contents.args) {
-                    if (arg is Component && hasForeignText(arg)) return true
-                }
-            }
-
-            is PlainTextContents -> if (contents.text().any { it.isLetter() }) return true
-
-            // Score, selector, keybind and NBT text is never part of a language file.
-            else -> if (component.string.any { it.isLetter() }) return true
-        }
-
-        for (sibling in component.siblings) {
-            if (hasForeignText(sibling)) return true
-        }
-
-        return false
-    }
-
-    /**
-     * Identifies an item by everything the player reads. The target language and the loaded
-     * language index are part of the key, so a language or resource reload starts over.
-     */
-    private fun keyOf(language: String, payloads: List<String>): String = buildString {
-        append(LanguageKeys.generation)
-        append('\u0000')
-        append(language)
-        for (payload in payloads) {
-            append('\u0000')
-            append(payload)
-        }
+        return Parsed(lines, payloads, LineGroup.key(language, payloads))
     }
 
     private fun snapshot(stack: ItemStack): Snapshot {
@@ -338,32 +235,14 @@ class ItemTranslator(
     }
 
     /** The translated component of one line, or {@code null} when the original has to be shown. */
-    private fun translated(entry: Entry?, line: Line, index: Int): Component? {
-        if (entry == null || entry.state != State.DONE || entry.showingOriginal) return null
-        if (!line.requestable) return null
-
-        val text = entry.translations.getOrNull(index) ?: return null
-        if (text.isBlank()) return null
+    private fun translated(entry: LineGroup?, line: Line, index: Int): Component? {
+        val text = entry?.translation(index) ?: return null
 
         // The model did not keep the segment markers; show the plain text, like a chat line.
         return StyledText.rebuild(text, line.segments) ?: Component.literal(StyledText.stripMarkers(text))
     }
 
-    private fun marker(entry: Entry?): Component {
-        val color = when (entry?.state) {
-            State.TRANSLATING -> ChatFormatting.YELLOW
-            State.DONE -> if (entry.showingOriginal) ChatFormatting.GRAY else ChatFormatting.GREEN
-            State.FAILED -> ChatFormatting.RED
-            null, State.IDLE -> ChatFormatting.GRAY
-        }
-
-        return Component.literal(MARKER).withStyle(Style.EMPTY.withColor(color))
-    }
-
-    private fun Parsed.hasWork(): Boolean = lines.any { it.requestable }
-
     private companion object {
-        const val MARKER = "[T]"
         const val MAX_ENTRIES = 256
         const val MAX_SNAPSHOTS = 256
     }

@@ -1,7 +1,11 @@
 package me.avgt.s9e.client.lang
 
 import me.avgt.s9e.common.log.NekoLog
+import net.minecraft.client.Minecraft
 import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.PlainTextContents
+import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.resources.Identifier
 import net.minecraft.server.packs.resources.ResourceManager
 
@@ -49,4 +53,33 @@ object LanguageKeys {
 
     /** True when the client language itself (not the `en_us` fallback) defines [key]. */
     fun isLocalized(key: String): Boolean = keys.contains(key)
+
+    /** The language code the client currently displays. */
+    fun clientLanguage(): String = Minecraft.getInstance().options.languageCode.lowercase()
+
+    /**
+     * True when the component still contains text the client language has no translation for: a
+     * literal (custom name, lore, text a mod built by hand) or a key only `en_us` provides.
+     */
+    fun hasForeignText(component: Component): Boolean {
+        when (val contents = component.contents) {
+            is TranslatableContents -> {
+                if (!isLocalized(contents.key)) return true
+                for (arg in contents.args) {
+                    if (arg is Component && hasForeignText(arg)) return true
+                }
+            }
+
+            is PlainTextContents -> if (contents.text().any { it.isLetter() }) return true
+
+            // Score, selector, keybind and NBT text is never part of a language file.
+            else -> if (component.string.any { it.isLetter() }) return true
+        }
+
+        for (sibling in component.siblings) {
+            if (hasForeignText(sibling)) return true
+        }
+
+        return false
+    }
 }

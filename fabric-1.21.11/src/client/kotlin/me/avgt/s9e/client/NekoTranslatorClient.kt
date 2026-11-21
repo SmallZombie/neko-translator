@@ -19,11 +19,19 @@ import net.minecraft.client.gui.screens.inventory.BookViewScreen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
+import net.minecraft.util.FormattedCharSequence
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.block.entity.SignText
 
 object NekoTranslatorClient : ClientModInitializer {
     /** Translates or restores the item under the mouse while a container screen is open. */
     private lateinit var translateItemKey: KeyMapping
+
+    /** Translates or restores the text of the sign the crosshair is on. */
+    private lateinit var translateSignKey: KeyMapping
+
+    /** Puts the original text of the sign the crosshair is on on the clipboard. */
+    private lateinit var copySignKey: KeyMapping
 
     /** The key is only handled while a screen is open, so its repeat and release are tracked by hand. */
     private var itemKeyScreen: Screen? = null
@@ -32,15 +40,27 @@ object NekoTranslatorClient : ClientModInitializer {
     /** GLFW keycode of `T`, the same physical key vanilla uses for chat. */
     private const val DEFAULT_ITEM_KEY = 84
 
+    /** GLFW keycode of `G`. */
+    private const val DEFAULT_SIGN_KEY = 71
+
+    /** GLFW keycode of `;`. */
+    private const val DEFAULT_COPY_KEY = 59
+
     override fun onInitializeClient() {
         Neko.init()
 
+        val category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("neko-translator", "main"))
+
         translateItemKey = KeyBindingHelper.registerKeyBinding(
-            KeyMapping(
-                "key.neko-translator.translate_item",
-                DEFAULT_ITEM_KEY,
-                KeyMapping.Category.register(Identifier.fromNamespaceAndPath("neko-translator", "main")),
-            )
+            KeyMapping("key.neko-translator.translate_item", DEFAULT_ITEM_KEY, category)
+        )
+
+        translateSignKey = KeyBindingHelper.registerKeyBinding(
+            KeyMapping("key.neko-translator.translate_sign", DEFAULT_SIGN_KEY, category)
+        )
+
+        copySignKey = KeyBindingHelper.registerKeyBinding(
+            KeyMapping("key.neko-translator.copy_sign", DEFAULT_COPY_KEY, category)
         )
 
         ClientPlayNetworking.registerGlobalReceiver(RelayPayloads.ToClient.TYPE) { payload, _ ->
@@ -56,6 +76,12 @@ object NekoTranslatorClient : ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register {
             NekoScreens.tick()
             Neko.items.tick()
+            Neko.signs.tick()
+
+            // Key events reach a mapping only while no screen is open, so the sign keys cannot
+            // collide with the item key that lives inside container screens.
+            if (translateSignKey.consumeClick()) Neko.signs.toggleAimed()
+            if (copySignKey.consumeClick()) Neko.signs.copyAimed()
         }
 
         ClientLifecycleEvents.CLIENT_STOPPING.register { Neko.shutdown() }
@@ -70,6 +96,16 @@ object NekoTranslatorClient : ClientModInitializer {
     @JvmStatic
     fun itemName(stack: ItemStack, original: Component): Component =
         if (Neko.ready) Neko.items.hudName(stack, original) else original
+
+    /** Called by the sign renderer mixin to build the lines that a sign draws. */
+    @JvmStatic
+    fun signLines(
+        signText: SignText,
+        filtered: Boolean,
+        original: Array<FormattedCharSequence>,
+        prepare: java.util.function.Function<Component, FormattedCharSequence>,
+    ): Array<FormattedCharSequence> =
+        if (Neko.ready) Neko.signs.display(signText, filtered, original) { prepare.apply(it) } else original
 
     /**
      * Called by the [Screen] mixin before a screen handles a key. Returns true when the key was

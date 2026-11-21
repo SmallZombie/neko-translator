@@ -105,6 +105,9 @@
   "neko-translator.error.peer_timeout": "The other player did not respond in time",
   "neko-translator.error.peer_response_failed": "The other player's response failed",
   "neko-translator.error.serve": "Failed to translate for %s: %s",
+  "neko-translator.sign.copied": "Sign text copied",
   "key.neko-translator.translate_item": "Translate Item",
+  "key.neko-translator.translate_sign": "Translate Sign",
+  "key.neko-translator.copy_sign": "Copy Sign Text",
   "key.category.neko-translator.main": "Neko Translator"
 }

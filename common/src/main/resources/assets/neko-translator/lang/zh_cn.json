@@ -105,6 +105,9 @@
   "neko-translator.error.peer_timeout": "对方未在规定时间内响应",
   "neko-translator.error.peer_response_failed": "对方响应失败",
   "neko-translator.error.serve": "为 %s 翻译时出错：%s",
+  "neko-translator.sign.copied": "已复制告示牌内容",
   "key.neko-translator.translate_item": "翻译物品",
+  "key.neko-translator.translate_sign": "翻译告示牌",
+  "key.neko-translator.copy_sign": "复制告示牌内容",
   "key.category.neko-translator.main": "Neko Translator"
 }

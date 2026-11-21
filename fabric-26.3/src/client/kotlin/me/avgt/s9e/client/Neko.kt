@@ -9,6 +9,7 @@ import me.avgt.s9e.client.book.BookTranslator
 import me.avgt.s9e.client.chat.ChatTranslator
 import me.avgt.s9e.client.item.ItemTranslator
 import me.avgt.s9e.client.peer.FabricPeerTransport
+import me.avgt.s9e.client.sign.SignTranslator
 import me.avgt.s9e.client.util.Feed
 import me.avgt.s9e.common.cache.TranslationCache
 import me.avgt.s9e.common.config.NekoConfig
@@ -27,7 +28,7 @@ object Neko {
     private var initialized = false
 
     /** False until [init] finished; mixin callbacks can fire while the game is still starting. */
-    val ready: Boolean get() = initialized && this::items.isInitialized
+    val ready: Boolean get() = initialized && this::items.isInitialized && this::signs.isInitialized
 
     lateinit var config: NekoConfig
         private set
@@ -44,6 +45,8 @@ object Neko {
     lateinit var books: BookTranslator
         private set
     lateinit var items: ItemTranslator
+        private set
+    lateinit var signs: SignTranslator
         private set
 
     /** Latest model list fetched from the configured endpoint. */
@@ -84,6 +87,7 @@ object Neko {
         chat = ChatTranslator(config, coordinator)
         books = BookTranslator(config, coordinator)
         items = ItemTranslator(config, coordinator) { language() }
+        signs = SignTranslator(config, coordinator) { language() }
 
         NekoLog.info("Neko Translator loaded (cache entries: ${cache.size()})")
     }

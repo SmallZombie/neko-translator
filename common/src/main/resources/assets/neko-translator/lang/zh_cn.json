@@ -104,5 +104,7 @@
   "neko-translator.error.link_denied": "对方未允许你委托其获取翻译 (通过 /t allow %s 来允许你发起委托)",
   "neko-translator.error.peer_timeout": "对方未在规定时间内响应",
   "neko-translator.error.peer_response_failed": "对方响应失败",
-  "neko-translator.error.serve": "为 %s 翻译时出错：%s"
+  "neko-translator.error.serve": "为 %s 翻译时出错：%s",
+  "key.neko-translator.translate_item": "翻译物品",
+  "key.category.neko-translator.main": "Neko Translator"
 }

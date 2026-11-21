@@ -104,5 +104,7 @@
   "neko-translator.error.link_denied": "The other player has not allowed you to translate through them (they can run /t allow %s)",
   "neko-translator.error.peer_timeout": "The other player did not respond in time",
   "neko-translator.error.peer_response_failed": "The other player's response failed",
-  "neko-translator.error.serve": "Failed to translate for %s: %s"
+  "neko-translator.error.serve": "Failed to translate for %s: %s",
+  "key.neko-translator.translate_item": "Translate Item",
+  "key.category.neko-translator.main": "Neko Translator"
 }

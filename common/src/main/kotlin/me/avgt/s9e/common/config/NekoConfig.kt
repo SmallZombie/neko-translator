@@ -35,7 +35,7 @@ class NekoConfig {
     @Volatile
     var useOthers: Boolean = false
 
-    /** Translate new chat lines without a click. Off by default: one click is cheap, API calls are not. */
+    /** Translate new chat lines, book pages and item tooltips without a click. Off by default: one click is cheap, API calls are not. */
     @Volatile
     var autoTranslate: Boolean = false
 

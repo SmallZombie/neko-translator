@@ -7,7 +7,7 @@
   "neko-translator.config.refresh_models": "Refresh",
   "neko-translator.config.allow_others": "Let others translate through me",
   "neko-translator.config.use_others": "Translate through others",
-  "neko-translator.config.auto_translate": "Translate new messages automatically",
+  "neko-translator.config.auto_translate": "Auto translate",
   "neko-translator.config.done": "Done",
   "neko-translator.config.model_none": "Not selected",
   "neko-translator.config.language": "Language: %s",

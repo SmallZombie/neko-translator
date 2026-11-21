@@ -7,7 +7,7 @@
   "neko-translator.config.refresh_models": "刷新模型",
   "neko-translator.config.allow_others": "允许他人委托我翻译",
   "neko-translator.config.use_others": "委托他人翻译",
-  "neko-translator.config.auto_translate": "自动翻译新消息",
+  "neko-translator.config.auto_translate": "自动翻译",
   "neko-translator.config.done": "完成",
   "neko-translator.config.model_none": "未选择",
   "neko-translator.config.language": "翻译语言：%s",

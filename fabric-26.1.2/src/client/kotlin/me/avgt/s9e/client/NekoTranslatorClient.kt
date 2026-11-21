@@ -7,15 +7,42 @@ import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
+import net.minecraft.client.KeyMapping
+import net.minecraft.client.gui.components.AbstractTextAreaWidget
 import net.minecraft.client.gui.components.ChatComponent
+import net.minecraft.client.gui.components.EditBox
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.gui.screens.inventory.BookViewScreen
+import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.multiplayer.chat.GuiMessageSource
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
+import net.minecraft.world.item.ItemStack
 
 object NekoTranslatorClient : ClientModInitializer {
+    /** Translates or restores the item under the mouse while a container screen is open. */
+    private lateinit var translateItemKey: KeyMapping
+
+    /** The key is only handled while a screen is open, so its repeat and release are tracked by hand. */
+    private var itemKeyScreen: Screen? = null
+    private var itemKeyDown = false
+
+    /** GLFW keycode of `T`, the same physical key vanilla uses for chat. */
+    private const val DEFAULT_ITEM_KEY = 84
+
     override fun onInitializeClient() {
         Neko.init()
+
+        translateItemKey = KeyMappingHelper.registerKeyMapping(
+            KeyMapping(
+                "key.neko-translator.translate_item",
+                DEFAULT_ITEM_KEY,
+                KeyMapping.Category.register(Identifier.fromNamespaceAndPath("neko-translator", "main")),
+            )
+        )
 
         ClientPlayNetworking.registerGlobalReceiver(RelayPayloads.ToClient.TYPE) { payload, _ ->
             Neko.peers.handleIncoming(payload.from(), payload.data())
@@ -27,9 +54,52 @@ object NekoTranslatorClient : ClientModInitializer {
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ -> NekoCommands.register(dispatcher) }
 
-        ClientTickEvents.END_CLIENT_TICK.register { NekoScreens.tick() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            NekoScreens.tick()
+            Neko.items.tick()
+        }
 
         ClientLifecycleEvents.CLIENT_STOPPING.register { Neko.shutdown() }
+    }
+
+    /** Called by the [ItemStack] mixin to build the decorated tooltip of an item. */
+    @JvmStatic
+    fun itemTooltip(lines: List<Component>): List<Component> =
+        if (Neko.ready) Neko.items.decorate(lines) else lines
+
+    /** Called by the HUD mixin for the name that vanilla shows above the hotbar. */
+    @JvmStatic
+    fun itemName(stack: ItemStack, original: Component): Component =
+        if (Neko.ready) Neko.items.hudName(stack, original) else original
+
+    /**
+     * Called by the [Screen] mixin before a screen handles a key. Returns true when the key was
+     * the item binding and was consumed.
+     */
+    @JvmStatic
+    fun onItemKeyPress(screen: Screen, event: KeyEvent): Boolean {
+        if (!Neko.ready) return false
+        if (screen !== itemKeyScreen) {
+            itemKeyScreen = screen
+            itemKeyDown = false
+        }
+
+        if (screen !is AbstractContainerScreen<*>) return false
+        if (!translateItemKey.matches(event)) return false
+        // Holding the key must not toggle the item on every auto-repeat.
+        if (itemKeyDown) return true
+
+        val focused = screen.focused
+        if (focused is EditBox || focused is AbstractTextAreaWidget) return false
+
+        itemKeyDown = true
+        return Neko.items.toggleHovered()
+    }
+
+    @JvmStatic
+    fun onItemKeyRelease(event: KeyEvent) {
+        if (!Neko.ready) return
+        if (translateItemKey.matches(event)) itemKeyDown = false
     }
 
     /** Called by the chat mixin before a message is stored in the chat history. */

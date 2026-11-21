@@ -3,11 +3,17 @@
 	"package": "me.avgt.s9e.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"AbstractContainerScreenAccess",
 		"BookViewScreenMixin",
 		"ChatComponentAccess",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
-		"ScreenAccess"
+		"HudMixin",
+		"ItemStackTooltipMixin",
+		"KeyboardHandlerMixin",
+		"LanguageManagerMixin",
+		"ScreenAccess",
+		"ScreenKeyMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

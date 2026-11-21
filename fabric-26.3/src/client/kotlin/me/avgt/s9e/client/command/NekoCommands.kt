@@ -12,6 +12,8 @@ import me.avgt.s9e.client.gui.ConfigScreen
 import me.avgt.s9e.client.gui.NekoScreens
 import me.avgt.s9e.client.util.Feed
 import me.avgt.s9e.common.log.NekoLog
+import me.avgt.s9e.common.text.NekoText
+import me.avgt.s9e.common.translate.TranslationException
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
@@ -22,7 +24,7 @@ object NekoCommands {
         dispatcher.register(
             ClientCommands.literal("t")
                 .executes { context ->
-                    context.source.sendFeedback(Feed.infoComponent("用法：/t config | allow <玩家> | disallow <玩家> | link <玩家> | unlink <玩家> | status | refresh | clear-cache"))
+                    context.source.sendFeedback(Feed.infoComponent(NekoText.of("neko-translator.command.usage")))
                     1
                 }
                 .then(
@@ -80,16 +82,16 @@ object NekoCommands {
             if (add) {
                 val changed = Neko.peers.allow(players.associate { it.uuid to it.name })
                 context.source.sendFeedback(
-                    Feed.infoComponent("已允许 ${changed} 名玩家通过你获取翻译：${names(players)}")
+                    Feed.infoComponent(NekoText.of("neko-translator.command.allow.done", changed, names(players)))
                 )
             } else {
                 val changed = Neko.peers.disallow(players.map { it.uuid })
                 context.source.sendFeedback(
-                    Feed.infoComponent("已取消 ${changed} 名玩家的许可：${names(players)}")
+                    Feed.infoComponent(NekoText.of("neko-translator.command.disallow.done", changed, names(players)))
                 )
             }
         } catch (e: PlayerRefs.SelectorException) {
-            context.source.sendError(Feed.errorComponent(e.message ?: "参数错误"))
+            context.source.sendError(Feed.errorComponent(e.text))
         }
 
         return 1
@@ -102,25 +104,29 @@ object NekoCommands {
             val player = PlayerRefs.resolve(raw, allowSelf = false, multiple = false).first()
 
             if (Neko.config.linked.containsKey(player.uuid)) {
-                context.source.sendFeedback(Feed.infoComponent("你已经链接了 ${player.name}"))
+                context.source.sendFeedback(
+                    Feed.infoComponent(NekoText.of("neko-translator.command.link.already", player.name))
+                )
                 return 1
             }
 
-            context.source.sendFeedback(Feed.infoComponent("正在请求与 ${player.name} 建立链接…"))
+            context.source.sendFeedback(
+                Feed.infoComponent(NekoText.of("neko-translator.command.link.requesting", player.name))
+            )
 
             Neko.peers.link(player.uuid, player.name).whenComplete { error, throwable ->
                 Minecraft.getInstance().execute {
                     if (throwable != null) {
-                        Feed.error("链接 ${player.name} 失败")
+                        Feed.error(NekoText.of("neko-translator.command.link.failed", player.name))
                     } else if (error != null) {
                         Feed.error(error)
                     } else {
-                        Feed.info("已链接 ${player.name}")
+                        Feed.info(NekoText.of("neko-translator.command.link.done", player.name))
                     }
                 }
             }
         } catch (e: PlayerRefs.SelectorException) {
-            context.source.sendError(Feed.errorComponent(e.message ?: "参数错误"))
+            context.source.sendError(Feed.errorComponent(e.text))
         }
 
         return 1
@@ -132,12 +138,16 @@ object NekoCommands {
         try {
             val player = PlayerRefs.resolve(raw, allowSelf = false, multiple = false).first()
             if (Neko.peers.unlink(player.uuid)) {
-                context.source.sendFeedback(Feed.infoComponent("已取消与 ${player.name} 的链接"))
+                context.source.sendFeedback(
+                    Feed.infoComponent(NekoText.of("neko-translator.command.unlink.done", player.name))
+                )
             } else {
-                context.source.sendError(Feed.errorComponent("你没有链接 ${player.name}"))
+                context.source.sendError(
+                    Feed.errorComponent(NekoText.of("neko-translator.command.unlink.missing", player.name))
+                )
             }
         } catch (e: PlayerRefs.SelectorException) {
-            context.source.sendError(Feed.errorComponent(e.message ?: "参数错误"))
+            context.source.sendError(Feed.errorComponent(e.text))
         }
 
         return 1
@@ -146,19 +156,74 @@ object NekoCommands {
     private fun status(context: CommandContext<FabricClientCommandSource>): Int {
         val config = Neko.config
         val source = context.source
+        val unset = NekoText.of("neko-translator.command.status.unset")
 
-        source.sendFeedback(Feed.infoComponent("总开关：${onOff(config.enabled)}"))
-        source.sendFeedback(Feed.infoComponent("API 地址：${config.apiBaseUrl.ifBlank { "未设置" }}"))
-        source.sendFeedback(Feed.infoComponent("模型：${config.model.ifBlank { "未设置" }}"))
-        source.sendFeedback(Feed.infoComponent("API 密钥：${if (config.apiKey.isBlank()) "未设置" else "已设置"}"))
-        source.sendFeedback(Feed.infoComponent("允许他人委托我翻译：${onOff(config.allowOthers)}，已允许 ${config.allowed.size} 人"))
-        source.sendFeedback(Feed.infoComponent("委托他人获取翻译：${onOff(config.useOthers)}，已链接 ${config.linked.size} 人"))
+        source.sendFeedback(Feed.infoComponent(NekoText.of("neko-translator.command.status.enabled", onOff(config.enabled))))
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of("neko-translator.command.status.api_base", if (config.apiBaseUrl.isBlank()) unset else config.apiBaseUrl)
+            )
+        )
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of("neko-translator.command.status.model", if (config.model.isBlank()) unset else config.model)
+            )
+        )
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of(
+                    "neko-translator.command.status.api_key",
+                    if (config.apiKey.isBlank()) unset else NekoText.of("neko-translator.command.status.set"),
+                )
+            )
+        )
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of(
+                    "neko-translator.command.status.allow_others",
+                    onOff(config.allowOthers),
+                    config.allowed.size,
+                )
+            )
+        )
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of(
+                    "neko-translator.command.status.use_others",
+                    onOff(config.useOthers),
+                    config.linked.size,
+                )
+            )
+        )
         if (config.linked.isNotEmpty()) {
-            source.sendFeedback(Feed.infoComponent("链接列表：${config.linked.values.joinToString(", ")}"))
+            source.sendFeedback(
+                Feed.infoComponent(
+                    NekoText.of("neko-translator.command.status.linked", config.linked.values.joinToString(", "))
+                )
+            )
         }
-        source.sendFeedback(Feed.infoComponent("自动翻译：${onOff(config.autoTranslate)}，目标语言：${Neko.language()}"))
-        source.sendFeedback(Feed.infoComponent("缓存：${Neko.cache.size()} 条"))
-        source.sendFeedback(Feed.infoComponent("服务器中继：${if (Neko.peers.relayAvailable) "可用" else "不可用 (服务器未安装模组)"}"))
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of(
+                    "neko-translator.command.status.auto_translate",
+                    onOff(config.autoTranslate),
+                    Neko.language(),
+                )
+            )
+        )
+        source.sendFeedback(Feed.infoComponent(NekoText.of("neko-translator.command.status.cache", Neko.cache.size())))
+        source.sendFeedback(
+            Feed.infoComponent(
+                NekoText.of(
+                    "neko-translator.command.status.relay",
+                    if (Neko.peers.relayAvailable) {
+                        NekoText.of("neko-translator.command.status.relay.available")
+                    } else {
+                        NekoText.of("neko-translator.command.status.relay.unavailable")
+                    },
+                )
+            )
+        )
 
         return 1
     }
@@ -166,7 +231,7 @@ object NekoCommands {
     private fun refreshModels(context: CommandContext<FabricClientCommandSource>): Int {
         val baseUrl = Neko.config.apiBaseUrl
         val apiKey = Neko.config.apiKey
-        context.source.sendFeedback(Feed.infoComponent("正在获取模型列表…"))
+        context.source.sendFeedback(Feed.infoComponent(NekoText.of("neko-translator.status.fetching")))
 
         Neko.executor.execute {
             try {
@@ -179,13 +244,20 @@ object NekoCommands {
 
                 Minecraft.getInstance().execute {
                     if (models.isEmpty()) {
-                        Feed.info("接口没有返回任何模型")
+                        Feed.info(NekoText.of("neko-translator.command.refresh.empty"))
                     } else {
-                        Feed.info("已获取 ${models.size} 个模型，例如 ${models.take(3).joinToString(", ")}")
+                        Feed.info(
+                            NekoText.of(
+                                "neko-translator.command.refresh.done",
+                                models.size,
+                                models.take(3).joinToString(", "),
+                            )
+                        )
                     }
                 }
             } catch (t: Throwable) {
-                Minecraft.getInstance().execute { Feed.error(t.message ?: "获取模型列表失败") }
+                val message = if (t is TranslationException) t.text else NekoText.of("neko-translator.status.failed")
+                Minecraft.getInstance().execute { Feed.error(message) }
             }
         }
 
@@ -197,16 +269,23 @@ object NekoCommands {
         Neko.cache.clear()
         Neko.cache.save(force = true)
         Neko.coordinator.clearFailures()
-        context.source.sendFeedback(Feed.infoComponent("已清空 $size 条翻译缓存"))
+        context.source.sendFeedback(
+            Feed.infoComponent(NekoText.of("neko-translator.command.clear_cache.done", size))
+        )
         return 1
     }
 
-    private fun names(players: List<PlayerRefs.PlayerRef>): String {
+    private fun names(players: List<PlayerRefs.PlayerRef>): Any {
         val shown = players.take(10).joinToString(", ") { it.name }
-        return if (players.size > 10) "$shown 等 ${players.size} 人" else shown
+        return if (players.size > 10) {
+            NekoText.of("neko-translator.players.names_more", shown, players.size)
+        } else {
+            shown
+        }
     }
 
-    private fun onOff(value: Boolean): String = if (value) "开" else "关"
+    private fun onOff(value: Boolean): NekoText =
+        NekoText.of(if (value) "neko-translator.command.on" else "neko-translator.command.off")
 
     /** Player name / selector completion for `allow`, `disallow`, `link` and `unlink`. */
     private val TARGET_SUGGESTIONS = SuggestionProvider<FabricClientCommandSource> { _, builder ->

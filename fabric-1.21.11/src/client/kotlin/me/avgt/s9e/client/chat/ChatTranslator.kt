@@ -7,6 +7,7 @@ import me.avgt.s9e.client.mixin.ChatComponentAccess
 import me.avgt.s9e.client.util.Feed
 import me.avgt.s9e.common.config.NekoConfig
 import me.avgt.s9e.common.log.NekoLog
+import me.avgt.s9e.common.text.NekoText
 import me.avgt.s9e.common.translate.TranslationCoordinator
 import me.avgt.s9e.common.translate.TranslationResult
 import net.minecraft.ChatFormatting
@@ -113,7 +114,7 @@ class ChatTranslator(
         NekoLog.info("Translate marker clicked (entry=$id)")
         val entry = entries[id]
         if (entry == null) {
-            Feed.error("这条消息已经不在聊天记录中了")
+            Feed.error(NekoText.of("neko-translator.chat.gone"))
             return
         }
 
@@ -163,7 +164,7 @@ class ChatTranslator(
 
                     null -> {
                         entry.state = State.FAILED
-                        Feed.error("翻译失败")
+                        Feed.error(NekoText.of("neko-translator.error.translate_failed"))
                     }
                 }
                 refresh(entry)
@@ -235,16 +236,16 @@ class ChatTranslator(
         }
 
         val hover = when (entry.state) {
-            State.IDLE -> "点击翻译这条消息"
-            State.TRANSLATING -> "翻译中…"
-            State.DONE -> if (entry.showingOriginal) "点击显示译文" else "点击显示原文"
-            State.FAILED -> "翻译失败，点击重试"
+            State.IDLE -> Component.translatable("neko-translator.chat.hover.idle")
+            State.TRANSLATING -> Component.translatable("neko-translator.chat.hover.translating")
+            State.DONE -> if (entry.showingOriginal) Component.translatable("neko-translator.chat.hover.show_translation") else Component.translatable("neko-translator.chat.hover.show_original")
+            State.FAILED -> Component.translatable("neko-translator.chat.hover.retry")
         }
 
         val style = Style.EMPTY
             .withColor(color)
             .withClickEvent(ClickEvent.Custom(TRANSLATE_CLICK_ID, Optional.of<Tag>(StringTag.valueOf(entry.id.toString()))))
-            .withHoverEvent(HoverEvent.ShowText(Component.literal(hover)))
+            .withHoverEvent(HoverEvent.ShowText(hover))
 
         return Component.literal("[T]").withStyle(style)
     }

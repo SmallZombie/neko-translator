@@ -51,6 +51,10 @@ tasks.processResources {
 	filesMatching("fabric.mod.json") {
 		expand("version" to version)
 	}
+
+	// Shared assets (icon, language files) live in :common so every module ships the same files.
+	// They are copied into this module's resources, which is also what the dev client loads.
+	from(project(":common").file("src/main/resources"))
 }
 
 // 1.21.11 runs on Java 21; the common module is built for the same target.
@@ -84,7 +88,10 @@ tasks.jar {
 	inputs.property("projectName", projectName)
 
 	// The common module is not a mod on its own: its classes are merged into this jar.
-	from(commonMain.output)
+	// Its resources were already copied in by processResources, so skip them here.
+	from(commonMain.output) {
+		exclude("assets/**")
+	}
 
 	from(rootProject.file("LICENSE")) {
 		rename { "${it}_$projectName" }

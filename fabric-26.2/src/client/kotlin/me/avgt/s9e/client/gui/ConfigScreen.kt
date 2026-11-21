@@ -1,8 +1,11 @@
 package me.avgt.s9e.client.gui
 
 import me.avgt.s9e.client.Neko
+import me.avgt.s9e.client.util.toComponent
 import me.avgt.s9e.common.lang.LanguageNames
 import me.avgt.s9e.common.log.NekoLog
+import me.avgt.s9e.common.text.NekoText
+import me.avgt.s9e.common.translate.TranslationException
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Checkbox
@@ -16,7 +19,7 @@ import net.minecraft.network.chat.Component
  * <p>The layout is deliberately compact (320x244) so it still fits a 320x240 GUI at the
  * lowest common window sizes; everything is positioned from [panelLeft]/[panelTop].
  */
-class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
+class ConfigScreen : Screen(Component.translatable("neko-translator.config.title")) {
     private lateinit var baseUrlBox: EditBox
     private lateinit var apiKeyBox: EditBox
     private lateinit var modelButton: Button
@@ -26,7 +29,7 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
     private var panelLeft = 0
     private var panelTop = 0
     private var panelWidth = 320
-    private var status: String = ""
+    private var status: NekoText? = null
 
     override fun init() {
         panelWidth = minOf(324, width - 8)
@@ -38,7 +41,7 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
         val config = Neko.config
 
         addRenderableWidget(
-            Checkbox.builder(Component.literal("启用翻译"), font)
+            Checkbox.builder(Component.translatable("neko-translator.config.enabled"), font)
                 .pos(left, panelTop + 20)
                 .maxWidth(contentWidth)
                 .selected(config.enabled)
@@ -50,13 +53,13 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
                 .build()
         )
 
-        baseUrlBox = EditBox(font, left, panelTop + 50, contentWidth, 18, Component.literal("API 地址"))
+        baseUrlBox = EditBox(font, left, panelTop + 50, contentWidth, 18, Component.translatable("neko-translator.config.api_base"))
         baseUrlBox.setMaxLength(1000)
         baseUrlBox.setHint(Component.literal("https://api.openai.com/v1"))
         baseUrlBox.value = config.apiBaseUrl
         addRenderableWidget(baseUrlBox)
 
-        apiKeyBox = EditBox(font, left, panelTop + 81, contentWidth, 18, Component.literal("API 密钥"))
+        apiKeyBox = EditBox(font, left, panelTop + 81, contentWidth, 18, Component.translatable("neko-translator.config.api_key"))
         apiKeyBox.setMaxLength(1000)
         apiKeyBox.setHint(Component.literal("sk-..."))
         apiKeyBox.value = config.apiKey
@@ -69,13 +72,13 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
         )
 
         addRenderableWidget(
-            Button.builder(Component.literal("刷新模型"), Button.OnPress { refreshModels() })
+            Button.builder(Component.translatable("neko-translator.config.refresh_models"), Button.OnPress { refreshModels() })
                 .bounds(left + contentWidth - 62, panelTop + 112, 62, 18)
                 .build()
         )
 
         addRenderableWidget(
-            Checkbox.builder(Component.literal("允许他人委托我翻译"), font)
+            Checkbox.builder(Component.translatable("neko-translator.config.allow_others"), font)
                 .pos(left, panelTop + 134)
                 .maxWidth(contentWidth)
                 .selected(config.allowOthers)
@@ -84,7 +87,7 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
         )
 
         addRenderableWidget(
-            Checkbox.builder(Component.literal("委托他人翻译"), font)
+            Checkbox.builder(Component.translatable("neko-translator.config.use_others"), font)
                 .pos(left, panelTop + 152)
                 .maxWidth(contentWidth)
                 .selected(config.useOthers)
@@ -93,7 +96,7 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
         )
 
         addRenderableWidget(
-            Checkbox.builder(Component.literal("自动翻译新消息"), font)
+            Checkbox.builder(Component.translatable("neko-translator.config.auto_translate"), font)
                 .pos(left, panelTop + 170)
                 .maxWidth(contentWidth)
                 .selected(config.autoTranslate)
@@ -122,7 +125,7 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
         )
 
         addRenderableWidget(
-            Button.builder(Component.literal("完成"), Button.OnPress { onClose() })
+            Button.builder(Component.translatable("neko-translator.config.done"), Button.OnPress { onClose() })
                 .bounds(left, panelTop + 220, contentWidth, 18)
                 .build()
         )
@@ -142,12 +145,11 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick)
 
         graphics.text(font, title, left + 12, top + 6, 0xFFFFFFFF.toInt())
-        graphics.text(font, Component.literal("API 地址"), left + 12, top + 40, 0xFFAAAAAA.toInt())
-        graphics.text(font, Component.literal("API 密钥"), left + 12, top + 71, 0xFFAAAAAA.toInt())
-        graphics.text(font, Component.literal("模型"), left + 12, top + 102, 0xFFAAAAAA.toInt())
+        graphics.text(font, Component.translatable("neko-translator.config.api_base"), left + 12, top + 40, 0xFFAAAAAA.toInt())
+        graphics.text(font, Component.translatable("neko-translator.config.api_key"), left + 12, top + 71, 0xFFAAAAAA.toInt())
+        graphics.text(font, Component.translatable("neko-translator.config.model"), left + 12, top + 102, 0xFFAAAAAA.toInt())
 
-        val hint = if (status.isNotEmpty()) status else ""
-        graphics.text(font, Component.literal(hint), left + 12, top + 209, 0xFF888888.toInt())
+        status?.let { graphics.text(font, it.toComponent(), left + 12, top + 209, 0xFF888888.toInt()) }
     }
 
     override fun isPauseScreen(): Boolean = false
@@ -171,7 +173,7 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
 
     private fun refreshModels() {
         applyEditors()
-        status = "正在获取模型列表…"
+        status = NekoText.of("neko-translator.status.fetching")
         val baseUrl = Neko.config.apiBaseUrl
         val apiKey = Neko.config.apiKey
 
@@ -180,10 +182,10 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
                 val models = Neko.http.listModels(baseUrl, apiKey)
                 Neko.availableModels = models
                 if (Neko.config.model.isBlank() && models.isNotEmpty()) Neko.config.model = models.first()
-                "已获取 ${models.size} 个模型"
+                NekoText.of("neko-translator.status.fetched", models.size)
             } catch (t: Throwable) {
                 NekoLog.warn("Model list request failed: ${t.message}")
-                t.message ?: "获取模型列表失败"
+                if (t is TranslationException) t.text else NekoText.of("neko-translator.status.failed")
             }
 
             net.minecraft.client.Minecraft.getInstance().execute {
@@ -197,24 +199,34 @@ class ConfigScreen : Screen(Component.literal("Neko Translator 设置")) {
 
     private fun modelLabel(): Component {
         val model = Neko.config.model
-        return Component.literal(if (model.isBlank()) "未选择" else model)
+        return if (model.isBlank()) {
+            Component.translatable("neko-translator.config.model_none")
+        } else {
+            Component.literal(model)
+        }
     }
 
     private fun languageLabel(): Component {
         val code = Neko.config.targetLanguage
-        val display = LanguageNames.displayName(code)
-        val suffix = if (code == "auto") " (${Neko.language()})" else ""
-        return Component.literal("翻译语言：$display$suffix")
+        return if (code == LanguageNames.AUTO) {
+            Component.translatable("neko-translator.config.language.auto", Neko.language())
+        } else {
+            Component.translatable(
+                "neko-translator.config.language",
+                Component.literal(LanguageNames.nativeName(code)),
+            )
+        }
     }
 
     private fun thinkingLabel(): Component {
-        val label = when (Neko.config.reasoningEffort) {
-            "low" -> "低"
-            "medium" -> "中"
-            "high" -> "高"
-            else -> "关"
+        val level = when (Neko.config.reasoningEffort) {
+            "low", "medium", "high" -> Neko.config.reasoningEffort
+            else -> "off"
         }
-        return Component.literal("思考：$label")
+        return Component.translatable(
+            "neko-translator.config.thinking",
+            Component.translatable("neko-translator.config.thinking.$level"),
+        )
     }
 
     private fun nextThinkingLevel(current: String): String = when (current) {

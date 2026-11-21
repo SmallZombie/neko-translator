@@ -1,6 +1,7 @@
 package me.avgt.s9e.client.command
 
 import java.util.UUID
+import me.avgt.s9e.common.text.NekoText
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.PlayerInfo
 
@@ -8,7 +9,7 @@ import net.minecraft.client.multiplayer.PlayerInfo
 object PlayerRefs {
     data class PlayerRef(val uuid: UUID, val name: String)
 
-    class SelectorException(message: String) : Exception(message)
+    class SelectorException(val text: NekoText) : Exception(text.key)
 
     fun online(): List<PlayerRef> {
         val connection = Minecraft.getInstance().connection ?: return emptyList()
@@ -25,9 +26,11 @@ object PlayerRefs {
 
     fun resolve(input: String, allowSelf: Boolean, multiple: Boolean): List<PlayerRef> {
         val tokens = input.trim().split(Regex("[,\\s]+")).filter { it.isNotEmpty() }
-        if (tokens.isEmpty()) throw SelectorException("请指定玩家")
+        if (tokens.isEmpty()) throw SelectorException(NekoText.of("neko-translator.players.select_required"))
 
-        if (!multiple && tokens.size > 1) throw SelectorException("该命令只能指定一名玩家")
+        if (!multiple && tokens.size > 1) {
+            throw SelectorException(NekoText.of("neko-translator.players.single_only"))
+        }
 
         val result = LinkedHashMap<UUID, PlayerRef>()
 
@@ -40,30 +43,36 @@ object PlayerRefs {
                 }
 
                 token == "@p" || token == "@s" -> {
-                    val self = self() ?: throw SelectorException("当前没有可用的玩家")
-                    if (!allowSelf) throw SelectorException("不能对自己使用该命令")
+                    val self = self() ?: throw SelectorException(NekoText.of("neko-translator.players.no_player"))
+                    if (!allowSelf) throw SelectorException(NekoText.of("neko-translator.players.no_self"))
                     result[self.uuid] = self
                 }
 
                 token == "@r" -> {
                     val candidates = online().filter { it.uuid != self()?.uuid }
-                    if (candidates.isEmpty()) throw SelectorException("没有其他在线玩家")
+                    if (candidates.isEmpty()) {
+                        throw SelectorException(NekoText.of("neko-translator.players.no_others_online"))
+                    }
                     val picked = candidates.random()
                     result[picked.uuid] = picked
                 }
 
-                token.startsWith("@") -> throw SelectorException("不支持的玩家选择器 $token，请使用玩家名、@a、@p、@r 或 UUID")
+                token.startsWith("@") -> throw SelectorException(
+                    NekoText.of("neko-translator.players.unsupported_selector", token)
+                )
 
                 else -> {
                     val player = byName(token) ?: byUuid(token)
-                        ?: throw SelectorException("找不到玩家 $token（仅支持在线玩家名或 UUID）")
-                    if (!allowSelf && player.uuid == self()?.uuid) throw SelectorException("不能对自己使用该命令")
+                        ?: throw SelectorException(NekoText.of("neko-translator.players.not_found", token))
+                    if (!allowSelf && player.uuid == self()?.uuid) {
+                        throw SelectorException(NekoText.of("neko-translator.players.no_self"))
+                    }
                     result[player.uuid] = player
                 }
             }
         }
 
-        if (result.isEmpty()) throw SelectorException("没有匹配到任何玩家")
+        if (result.isEmpty()) throw SelectorException(NekoText.of("neko-translator.players.no_match"))
         return result.values.toList()
     }
 

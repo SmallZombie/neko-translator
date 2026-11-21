@@ -7,6 +7,7 @@ import me.avgt.s9e.common.cache.TranslationCache
 import me.avgt.s9e.common.config.NekoConfig
 import me.avgt.s9e.common.log.NekoLog
 import me.avgt.s9e.common.peer.PeerManager
+import me.avgt.s9e.common.text.NekoText
 
 /**
  * Central scheduling point for translations.
@@ -52,11 +53,11 @@ class TranslationCoordinator(
             route(key, text, language)
         } catch (t: Throwable) {
             NekoLog.warn("Unexpected translation failure: ${t.javaClass.simpleName}: ${t.message}")
-            CompletableFuture.completedFuture(TranslationResult.Err("翻译过程中发生内部错误"))
+            CompletableFuture.completedFuture(TranslationResult.Err(NekoText.of("neko-translator.error.internal")))
         }
 
         routed.whenComplete { result, _ ->
-            promise.complete(result ?: TranslationResult.Err("翻译失败"))
+            promise.complete(result ?: TranslationResult.Err(NekoText.of("neko-translator.error.translate_failed")))
             routeJobs.remove(key, promise)
         }
 
@@ -81,14 +82,16 @@ class TranslationCoordinator(
         if (config.useOthers && config.linked.isNotEmpty()) {
             val manager = peers()
             val peer = manager.pickLinkedPlayer()
-                ?: return CompletableFuture.completedFuture(TranslationResult.Err("已链接的玩家都不在线"))
+                ?: return CompletableFuture.completedFuture(
+                    TranslationResult.Err(NekoText.of("neko-translator.error.peers_offline"))
+                )
 
             return manager.translateViaPeer(peer.first, text, language).handle { result, error ->
                 if (error != null) {
                     NekoLog.debug("Peer translation failed: ${error.javaClass.simpleName}: ${error.message}")
                 }
 
-                val answered = result ?: TranslationResult.Err("通过对方翻译失败")
+                val answered = result ?: TranslationResult.Err(NekoText.of("neko-translator.error.peer_failed"))
                 if (answered is TranslationResult.Ok) remember(key, answered.text)
                 answered
             }
@@ -96,7 +99,7 @@ class TranslationCoordinator(
 
         if (!config.hasLocalApi()) {
             return CompletableFuture.completedFuture(
-                TranslationResult.Err("尚未配置翻译服务，请使用 /t config 配置 API 地址、模型和密钥")
+                TranslationResult.Err(NekoText.of("neko-translator.error.not_configured"))
             )
         }
 
@@ -124,7 +127,7 @@ class TranslationCoordinator(
                 http.translate(config.apiBaseUrl, config.apiKey, config.model, text, language, config.reasoningEffort)
             } catch (t: Throwable) {
                 NekoLog.warn("Translation request crashed: ${t.javaClass.simpleName}: ${t.message}")
-                TranslationResult.Err("请求翻译服务失败")
+                TranslationResult.Err(NekoText.of("neko-translator.error.request_plain"))
             }
 
             when (result) {
@@ -144,7 +147,7 @@ class TranslationCoordinator(
         onCacheDirty()
     }
 
-    private data class Failure(val expiresAt: Long, val message: String)
+    private data class Failure(val expiresAt: Long, val message: NekoText)
 
     companion object {
         private const val FAILURE_TTL_MILLIS = 10_000L

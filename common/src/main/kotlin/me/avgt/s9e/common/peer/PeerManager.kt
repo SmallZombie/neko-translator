@@ -11,6 +11,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
 import me.avgt.s9e.common.config.NekoConfig
 import me.avgt.s9e.common.log.NekoLog
+import me.avgt.s9e.common.text.NekoText
 import me.avgt.s9e.common.translate.TranslationCoordinator
 import me.avgt.s9e.common.translate.TranslationResult
 
@@ -30,7 +31,7 @@ class PeerManager(
     private val config: NekoConfig,
     private val transport: PeerTransport,
     private val onConfigChanged: () -> Unit,
-    private val onLocalError: (String) -> Unit,
+    private val onLocalError: (NekoText) -> Unit,
     private val coordinator: () -> TranslationCoordinator,
 ) {
     private val tokens = AtomicLong(1)
@@ -46,7 +47,7 @@ class PeerManager(
     fun translateViaPeer(target: UUID, text: String, language: String): CompletableFuture<TranslationResult> {
         if (!relayAvailable) {
             return CompletableFuture.completedFuture(
-                TranslationResult.Err("服务器未安装 Neko Translator，无法通过其他玩家翻译")
+                TranslationResult.Err(NekoText.of("neko-translator.error.relay_missing"))
             )
         }
 
@@ -59,23 +60,24 @@ class PeerManager(
             .handle { reply, error ->
                 when {
                     error != null -> TranslationResult.Err(describeFailure(error))
-                    reply == null -> TranslationResult.Err("对方没有响应")
-                    reply.relayFailed -> TranslationResult.Err("对方不在线，或对方未安装 Neko Translator")
-                    !reply.ok && reply.denied -> TranslationResult.Err("对方未允许你委托其获取翻译")
-                    !reply.ok -> TranslationResult.Err("受托方翻译失败")
-                    reply.text.isNullOrBlank() -> TranslationResult.Err("受托方返回了空结果")
+                    reply == null -> TranslationResult.Err(NekoText.of("neko-translator.error.peer_no_response"))
+                    reply.relayFailed -> TranslationResult.Err(NekoText.of("neko-translator.error.peer_offline"))
+                    !reply.ok && reply.denied -> TranslationResult.Err(NekoText.of("neko-translator.error.peer_denied"))
+                    !reply.ok -> TranslationResult.Err(NekoText.of("neko-translator.error.peer_translate_failed"))
+                    reply.text.isNullOrBlank() -> TranslationResult.Err(NekoText.of("neko-translator.error.peer_empty"))
                     else -> TranslationResult.Ok(reply.text)
                 }
             }
     }
 
-    fun link(target: UUID, name: String): CompletableFuture<String?> {
+    /** Resolves with {@code null} when the link was established, or with the reason it was not. */
+    fun link(target: UUID, name: String): CompletableFuture<NekoText?> {
         if (config.linked.containsKey(target)) {
             return CompletableFuture.completedFuture(null)
         }
 
         if (!relayAvailable) {
-            return CompletableFuture.completedFuture("服务器未安装 Neko Translator，无法与玩家建立链接")
+            return CompletableFuture.completedFuture(NekoText.of("neko-translator.error.link_unavailable"))
         }
 
         val message = JsonObject()
@@ -85,9 +87,9 @@ class PeerManager(
             .handle { reply, error ->
                 when {
                     error != null -> describeFailure(error)
-                    reply == null -> "对方没有响应"
-                    reply.relayFailed -> "对方不在线，或对方未安装 Neko Translator"
-                    !reply.ok -> "对方未允许你委托其获取翻译 (通过 /t allow $name 来允许你发起委托)"
+                    reply == null -> NekoText.of("neko-translator.error.peer_no_response")
+                    reply.relayFailed -> NekoText.of("neko-translator.error.peer_offline")
+                    !reply.ok -> NekoText.of("neko-translator.error.link_denied", name)
                     else -> {
                         config.linked[target] = name
                         onConfigChanged()
@@ -162,7 +164,7 @@ class PeerManager(
                 is TranslationResult.Ok -> reply(from, token, ok = true, text = result.text, denied = false)
                 is TranslationResult.Err -> {
                     // The reason is only reported locally; the requester just sees "failed".
-                    onLocalError("为 ${nameOf(from)} 翻译时出错：${result.message}")
+                    onLocalError(NekoText.of("neko-translator.error.serve", nameOf(from), result.message))
                     reply(from, token, ok = false, text = null, denied = false)
                 }
                 null -> reply(from, token, ok = false, text = null, denied = false)
@@ -232,9 +234,13 @@ class PeerManager(
         return transport.send(token, target, bytes)
     }
 
-    private fun describeFailure(error: Throwable): String {
+    private fun describeFailure(error: Throwable): NekoText {
         val cause = unwrap(error)
-        return if (cause is TimeoutException) "对方未在规定时间内响应" else "对方响应失败"
+        return if (cause is TimeoutException) {
+            NekoText.of("neko-translator.error.peer_timeout")
+        } else {
+            NekoText.of("neko-translator.error.peer_response_failed")
+        }
     }
 
     private fun unwrap(error: Throwable): Throwable {

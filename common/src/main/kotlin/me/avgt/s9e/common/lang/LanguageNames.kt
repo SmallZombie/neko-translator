@@ -1,6 +1,16 @@
 package me.avgt.s9e.common.lang
 
+/**
+ * Language codes and names used by the settings screen and by the translation prompt.
+ *
+ * <p>Display names are the native names on purpose: a language selector should be readable for
+ * the speakers of every entry. Only the "follow the client" entry is translated, which is why
+ * the settings screen renders it from a language key instead of taking it from here.
+ */
 object LanguageNames {
+    /** Value of the "target language" setting that follows the client language. */
+    const val AUTO = "auto"
+
     /** Minecraft language code -> name used inside the translation prompt. */
     private val PROMPT_NAMES: Map<String, String> = mapOf(
         "zh_cn" to "Simplified Chinese",
@@ -38,9 +48,8 @@ object LanguageNames {
         "he_il" to "Hebrew",
     )
 
-    /** Languages offered by the settings screen, in cycle order. */
-    val CHOICES: List<Pair<String, String>> = listOf(
-        "auto" to "跟随客户端",
+    /** Native display names of the languages offered by the settings screen. */
+    private val DISPLAY_NAMES: Map<String, String> = mapOf(
         "zh_cn" to "简体中文",
         "zh_tw" to "繁體中文",
         "en_us" to "English",
@@ -53,16 +62,18 @@ object LanguageNames {
         "pt_br" to "Português (BR)",
     )
 
+    /** Language codes offered by the settings screen, in cycle order. */
+    val CHOICES: List<String> = listOf(AUTO) + DISPLAY_NAMES.keys
+
     fun promptName(languageCode: String): String = PROMPT_NAMES[languageCode.lowercase()] ?: languageCode
 
-    fun displayName(languageCode: String): String {
-        if (languageCode == "auto") return "跟随客户端"
-        CHOICES.firstOrNull { it.first == languageCode }?.let { return it.second }
-        return PROMPT_NAMES[languageCode.lowercase()] ?: languageCode
+    fun nativeName(languageCode: String): String {
+        val code = languageCode.lowercase()
+        return DISPLAY_NAMES[code] ?: PROMPT_NAMES[code] ?: languageCode
     }
 
     fun next(current: String): String {
-        val index = CHOICES.indexOfFirst { it.first == current }
-        return CHOICES[(index + 1).mod(CHOICES.size)].first
+        val index = CHOICES.indexOf(current)
+        return CHOICES[(index + 1).mod(CHOICES.size)]
     }
 }

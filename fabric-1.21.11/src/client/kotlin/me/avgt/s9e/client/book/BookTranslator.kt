@@ -6,6 +6,7 @@ import me.avgt.s9e.client.chat.StyledText
 import me.avgt.s9e.client.util.Feed
 import me.avgt.s9e.common.config.NekoConfig
 import me.avgt.s9e.common.log.NekoLog
+import me.avgt.s9e.common.text.NekoText
 import me.avgt.s9e.common.translate.TranslationCoordinator
 import me.avgt.s9e.common.translate.TranslationResult
 import net.minecraft.client.Minecraft
@@ -143,7 +144,7 @@ class BookTranslator(
                     null -> {
                         session.state = State.FAILED
                         NekoLog.warn("Book translation failed: ${error?.javaClass?.simpleName}")
-                        Feed.error("翻译失败")
+                        Feed.error(NekoText.of("neko-translator.error.translate_failed"))
                     }
                 }
                 session.version++

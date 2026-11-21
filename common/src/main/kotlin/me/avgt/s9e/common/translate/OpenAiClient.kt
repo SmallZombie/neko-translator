@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 import me.avgt.s9e.common.lang.LanguageNames
 import me.avgt.s9e.common.log.NekoLog
+import me.avgt.s9e.common.text.NekoText
 
 /**
  * Minimal OpenAI-compatible HTTP client. Only used by the local client; the API key is
@@ -34,9 +35,9 @@ class OpenAiClient {
         languageCode: String,
         reasoningEffort: String = REASONING_OFF,
     ): TranslationResult {
-        if (baseUrl.isBlank()) return TranslationResult.Err("API 地址为空，请使用 /t config 配置")
-        if (model.isBlank()) return TranslationResult.Err("未选择模型，请使用 /t config 配置")
-        if (apiKey.isBlank()) return TranslationResult.Err("API 密钥为空，请使用 /t config 配置")
+        if (baseUrl.isBlank()) return TranslationResult.Err(NekoText.of("neko-translator.error.api_base_empty"))
+        if (model.isBlank()) return TranslationResult.Err(NekoText.of("neko-translator.error.model_empty"))
+        if (apiKey.isBlank()) return TranslationResult.Err(NekoText.of("neko-translator.error.api_key_empty"))
 
         val languageName = LanguageNames.promptName(languageCode)
         val payload = JsonObject()
@@ -67,11 +68,11 @@ class OpenAiClient {
             val response = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
             val body = response.body() ?: ""
             if (response.statusCode() !in 200..299) {
-                TranslationResult.Err("翻译服务返回 HTTP ${response.statusCode()}: ${apiError(body)}")
+                TranslationResult.Err(httpError("neko-translator.error.http", response.statusCode(), body))
             } else {
                 val content = extractContent(body)
                 if (content.isNullOrBlank()) {
-                    TranslationResult.Err("翻译服务返回了空结果")
+                    TranslationResult.Err(NekoText.of("neko-translator.error.empty_result"))
                 } else {
                     val trimmed = content.trim()
                     if (trimmed.startsWith(SKIP_TOKEN)) {
@@ -83,23 +84,23 @@ class OpenAiClient {
                 }
             }
         } catch (t: HttpTimeoutException) {
-            TranslationResult.Err("请求翻译服务超时")
+            TranslationResult.Err(NekoText.of("neko-translator.error.timeout"))
         } catch (t: ConnectException) {
-            TranslationResult.Err("无法连接翻译服务，请检查 API 地址")
+            TranslationResult.Err(NekoText.of("neko-translator.error.connect"))
         } catch (t: UnknownHostException) {
-            TranslationResult.Err("无法解析 API 地址")
+            TranslationResult.Err(NekoText.of("neko-translator.error.unknown_host"))
         } catch (t: InterruptedException) {
             Thread.currentThread().interrupt()
-            TranslationResult.Err("翻译请求被中断")
+            TranslationResult.Err(NekoText.of("neko-translator.error.interrupted"))
         } catch (t: Throwable) {
             NekoLog.warn("Translation request failed: ${t.javaClass.simpleName}: ${t.message}")
-            TranslationResult.Err("请求翻译服务失败（${t.javaClass.simpleName}）")
+            TranslationResult.Err(NekoText.of("neko-translator.error.request_failed", t.javaClass.simpleName))
         }
     }
 
     /** Queries the `/models` endpoint. Throws [TranslationException] with a user-facing message. */
     fun listModels(baseUrl: String, apiKey: String): List<String> {
-        if (baseUrl.isBlank()) throw TranslationException("API 地址为空")
+        if (baseUrl.isBlank()) throw TranslationException(NekoText.of("neko-translator.error.api_base_empty"))
         val endpoint = modelsEndpoint(baseUrl)
         val builder = HttpRequest.newBuilder()
             .uri(URI.create(endpoint))
@@ -112,23 +113,24 @@ class OpenAiClient {
             http.send(builder.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
         } catch (t: InterruptedException) {
             Thread.currentThread().interrupt()
-            throw TranslationException("请求被中断")
+            throw TranslationException(NekoText.of("neko-translator.error.models_interrupted"))
         } catch (t: Throwable) {
-            throw TranslationException("无法获取模型列表（${t.javaClass.simpleName}）")
+            throw TranslationException(NekoText.of("neko-translator.error.models_failed", t.javaClass.simpleName))
         }
 
         val body = response.body() ?: ""
         if (response.statusCode() !in 200..299) {
-            throw TranslationException("模型列表返回 HTTP ${response.statusCode()}: ${apiError(body)}")
+            throw TranslationException(httpError("neko-translator.error.models_http", response.statusCode(), body))
         }
 
         val root = try {
             JsonParser.parseString(body).asJsonObject
         } catch (t: Throwable) {
-            throw TranslationException("模型列表不是有效的 JSON")
+            throw TranslationException(NekoText.of("neko-translator.error.models_json"))
         }
 
-        val data = root.getAsJsonArray("data") ?: throw TranslationException("模型列表缺少 data 字段")
+        val data = root.getAsJsonArray("data")
+            ?: throw TranslationException(NekoText.of("neko-translator.error.models_data"))
         val models = ArrayList<String>()
         for (element in data) {
             if (!element.isJsonObject) continue
@@ -171,6 +173,12 @@ class OpenAiClient {
         return null
     }
 
+    /** `HTTP <status>: <detail>` message; the detail is dropped when the body has none. */
+    private fun httpError(key: String, status: Int, body: String): NekoText {
+        val detail = apiError(body)
+        return if (detail.isEmpty()) NekoText.of("$key.empty", status) else NekoText.of(key, status, detail)
+    }
+
     private fun apiError(body: String): String {
         try {
             val root = JsonParser.parseString(body)
@@ -184,7 +192,7 @@ class OpenAiClient {
         } catch (ignored: Throwable) {
             // fall through to the raw body
         }
-        return body.trim().take(200).ifEmpty { "无响应内容" }
+        return body.trim().take(200)
     }
 
     private fun systemPrompt(languageName: String, languageCode: String): String = buildString {
@@ -241,4 +249,4 @@ class OpenAiClient {
     }
 }
 
-class TranslationException(message: String) : Exception(message)
+class TranslationException(val text: NekoText) : Exception(text.key)

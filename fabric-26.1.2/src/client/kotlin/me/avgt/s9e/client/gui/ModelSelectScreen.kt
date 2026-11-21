@@ -8,7 +8,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /** Model picker opened from the settings screen (compact 320x238 layout). */
-class ModelSelectScreen : Screen(Component.literal("选择模型")) {
+class ModelSelectScreen : Screen(Component.translatable("neko-translator.models.title")) {
     private var page = 0
     private var panelLeft = 0
     private var panelTop = 0
@@ -43,27 +43,27 @@ class ModelSelectScreen : Screen(Component.literal("选择模型")) {
         }
 
         addRenderableWidget(
-            Button.builder(Component.literal("< 上一页"), Button.OnPress {
+            Button.builder(Component.translatable("neko-translator.models.prev"), Button.OnPress {
                 if (page > 0) page--
                 rebuildWidgets()
             }).bounds(left, panelTop + 172, contentWidth / 2 - 3, 18).build()
         )
 
         addRenderableWidget(
-            Button.builder(Component.literal("下一页 >"), Button.OnPress {
+            Button.builder(Component.translatable("neko-translator.models.next"), Button.OnPress {
                 if ((page + 1) * PAGE_SIZE < models.size) page++
                 rebuildWidgets()
             }).bounds(left + contentWidth / 2 + 3, panelTop + 172, contentWidth / 2 - 3, 18).build()
         )
 
-        val box = EditBox(font, left, panelTop + 192, contentWidth - 52, 18, Component.literal("手动输入模型名"))
+        val box = EditBox(font, left, panelTop + 192, contentWidth - 52, 18, Component.translatable("neko-translator.models.manual"))
         box.setMaxLength(200)
-        box.setHint(Component.literal("手动输入模型名"))
+        box.setHint(Component.translatable("neko-translator.models.manual"))
         box.value = Neko.config.model
         manualBox = addRenderableWidget(box)
 
         addRenderableWidget(
-            Button.builder(Component.literal("使用"), Button.OnPress {
+            Button.builder(Component.translatable("neko-translator.models.use"), Button.OnPress {
                 val value = manualBox?.value?.trim().orEmpty()
                 if (value.isNotEmpty()) {
                     Neko.config.model = value
@@ -74,7 +74,7 @@ class ModelSelectScreen : Screen(Component.literal("选择模型")) {
         )
 
         addRenderableWidget(
-            Button.builder(Component.literal("返回"), Button.OnPress { closeToConfig() })
+            Button.builder(Component.translatable("neko-translator.models.back"), Button.OnPress { closeToConfig() })
                 .bounds(left, panelTop + 214, contentWidth, 18).build()
         )
     }
@@ -96,7 +96,7 @@ class ModelSelectScreen : Screen(Component.literal("选择模型")) {
         if (models.isEmpty()) {
             graphics.text(
                 font,
-                Component.literal("还没有模型列表，请回到设置页点『刷新模型』。"),
+                Component.translatable("neko-translator.models.empty"),
                 left + 12,
                 top + 28,
                 0xFFAAAAAA.toInt()
@@ -105,7 +105,7 @@ class ModelSelectScreen : Screen(Component.literal("选择模型")) {
             val pages = (models.size + PAGE_SIZE - 1) / PAGE_SIZE
             graphics.text(
                 font,
-                Component.literal("第 ${page + 1} / $pages 页，共 ${models.size} 个模型"),
+                Component.translatable("neko-translator.models.page", page + 1, pages, models.size),
                 left + 12,
                 top + 161,
                 0xFF888888.toInt()

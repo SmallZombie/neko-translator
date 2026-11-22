@@ -33,6 +33,9 @@ object NekoTranslatorClient : ClientModInitializer {
     /** Puts the original text of the sign the crosshair is on on the clipboard. */
     private lateinit var copySignKey: KeyMapping
 
+    /** Switches the visible boss bar names between original and translation. */
+    private lateinit var translateBossbarKey: KeyMapping
+
     /** The key is only handled while a screen is open, so its repeat and release are tracked by hand. */
     private var itemKeyScreen: Screen? = null
     private var itemKeyDown = false
@@ -45,6 +48,9 @@ object NekoTranslatorClient : ClientModInitializer {
 
     /** GLFW keycode of `;`. */
     private const val DEFAULT_COPY_KEY = 59
+
+    /** GLFW keycode of `B`. */
+    private const val DEFAULT_BOSSBAR_KEY = 66
 
     override fun onInitializeClient() {
         Neko.init()
@@ -61,6 +67,10 @@ object NekoTranslatorClient : ClientModInitializer {
 
         copySignKey = KeyBindingHelper.registerKeyBinding(
             KeyMapping("key.neko-translator.copy_sign", DEFAULT_COPY_KEY, category)
+        )
+
+        translateBossbarKey = KeyBindingHelper.registerKeyBinding(
+            KeyMapping("key.neko-translator.translate_bossbar", DEFAULT_BOSSBAR_KEY, category)
         )
 
         ClientPlayNetworking.registerGlobalReceiver(RelayPayloads.ToClient.TYPE) { payload, _ ->
@@ -82,9 +92,26 @@ object NekoTranslatorClient : ClientModInitializer {
             // collide with the item key that lives inside container screens.
             if (translateSignKey.consumeClick()) Neko.signs.toggleAimed()
             if (copySignKey.consumeClick()) Neko.signs.copyAimed()
+            if (translateBossbarKey.consumeClick()) Neko.hud.toggleBossbar()
         }
 
         ClientLifecycleEvents.CLIENT_STOPPING.register { Neko.shutdown() }
+    }
+
+    /** Called by the HUD mixin for the title, the subtitle and the action bar message. */
+    @JvmStatic
+    fun hudText(component: Component): Component =
+        if (Neko.ready) Neko.hud.title(component) else component
+
+    /** Called by the boss bar mixin for the name of one boss bar. */
+    @JvmStatic
+    fun bossbarText(component: Component): Component =
+        if (Neko.ready) Neko.hud.bossbar(component) else component
+
+    /** Called by the boss bar mixin at the start of a frame. */
+    @JvmStatic
+    fun beginBossbarFrame() {
+        if (Neko.ready) Neko.hud.beginBossbarFrame()
     }
 
     /** Called by the [ItemStack] mixin to build the decorated tooltip of an item. */

@@ -16,8 +16,8 @@ import net.minecraft.network.chat.Component
 /**
  * The `/t config` settings page.
  *
- * <p>The layout is deliberately compact (320x244) so it still fits a 320x240 GUI at the
- * lowest common window sizes; everything is positioned from [panelLeft]/[panelTop].
+ * <p>The layout is deliberately compact (320x262); everything is positioned from
+ * [panelLeft]/[panelTop] and only the smallest windows clip the bottom.
  */
 class ConfigScreen : Screen(Component.translatable("neko-translator.config.title")) {
     private lateinit var baseUrlBox: EditBox
@@ -104,6 +104,24 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
                 .build()
         )
 
+        addRenderableWidget(
+            Checkbox.builder(Component.translatable("neko-translator.config.translate_titles"), font)
+                .pos(left, panelTop + 188)
+                .maxWidth(contentWidth / 2)
+                .selected(config.translateTitles)
+                .onValueChange { _, value -> config.translateTitles = value; Neko.saveConfig() }
+                .build()
+        )
+
+        addRenderableWidget(
+            Checkbox.builder(Component.translatable("neko-translator.config.translate_bossbar"), font)
+                .pos(left + contentWidth / 2, panelTop + 188)
+                .maxWidth(contentWidth / 2)
+                .selected(config.translateBossbar)
+                .onValueChange { _, value -> config.translateBossbar = value; Neko.saveConfig() }
+                .build()
+        )
+
         val languageWidth = contentWidth * 3 / 5 - 2
         val thinkingLeft = left + contentWidth * 3 / 5 + 2
         val thinkingWidth = contentWidth - (contentWidth * 3 / 5) - 2
@@ -113,7 +131,7 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
                 config.targetLanguage = LanguageNames.next(config.targetLanguage)
                 languageButton.message = languageLabel()
                 Neko.saveConfig()
-            }).bounds(left, panelTop + 189, languageWidth, 18).build()
+            }).bounds(left, panelTop + 207, languageWidth, 18).build()
         )
 
         thinkingButton = addRenderableWidget(
@@ -121,12 +139,12 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
                 config.reasoningEffort = nextThinkingLevel(config.reasoningEffort)
                 thinkingButton.message = thinkingLabel()
                 Neko.saveConfig()
-            }).bounds(thinkingLeft, panelTop + 189, thinkingWidth, 18).build()
+            }).bounds(thinkingLeft, panelTop + 207, thinkingWidth, 18).build()
         )
 
         addRenderableWidget(
             Button.builder(Component.translatable("neko-translator.config.done"), Button.OnPress { onClose() })
-                .bounds(left, panelTop + 220, contentWidth, 18)
+                .bounds(left, panelTop + 238, contentWidth, 18)
                 .build()
         )
     }
@@ -149,7 +167,7 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
         graphics.drawString(font, Component.translatable("neko-translator.config.api_key"), left + 12, top + 71, 0xFFAAAAAA.toInt())
         graphics.drawString(font, Component.translatable("neko-translator.config.model"), left + 12, top + 102, 0xFFAAAAAA.toInt())
 
-        status?.let { graphics.drawString(font, it.toComponent(), left + 12, top + 209, 0xFF888888.toInt()) }
+        status?.let { graphics.drawString(font, it.toComponent(), left + 12, top + 227, 0xFF888888.toInt()) }
     }
 
     override fun isPauseScreen(): Boolean = false
@@ -237,6 +255,6 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
     }
 
     companion object {
-        private const val PANEL_HEIGHT = 244
+        private const val PANEL_HEIGHT = 262
     }
 }

@@ -37,7 +37,6 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           mkdir -p release-assets
-
           gh release download "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --pattern "neko-translator-*.jar" \
@@ -92,7 +91,7 @@ jobs:
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "version_type=$VERSION_TYPE" >> "$GITHUB_OUTPUT"
-          echo "name=Neko Translator ${VERSION} (Fabric, Minecraft ${MC_VERSION})" >> "$GITHUB_OUTPUT"
+          echo "name=Neko Translator ${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Modrinth
         uses: Kira-NT/mc-publish@v3
@@ -100,7 +99,7 @@ jobs:
           modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
 
-          modrinth-files: release-assets/neko-translator-fabric-*-mc${{ matrix.minecraft }}.jar
+          modrinth-files: release-assets/neko-translator-fabric-*+mc${{ matrix.minecraft }}.jar
 
           modrinth-name: ${{ steps.metadata.outputs.name }}
           modrinth-version: ${{ steps.metadata.outputs.version }}
@@ -109,4 +108,4 @@ jobs:
 
           modrinth-loaders: fabric
           modrinth-game-versions: ${{ matrix.minecraft }}
-          modrinth-environment: client
+          modrinth-environment: client | server?

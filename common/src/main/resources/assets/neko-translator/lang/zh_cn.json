@@ -8,6 +8,8 @@
   "neko-translator.config.allow_others": "允许他人委托我翻译",
   "neko-translator.config.use_others": "委托他人翻译",
   "neko-translator.config.auto_translate": "自动翻译",
+  "neko-translator.config.translate_titles": "翻译标题",
+  "neko-translator.config.translate_bossbar": "翻译 Bossbar",
   "neko-translator.config.done": "完成",
   "neko-translator.config.model_none": "未选择",
   "neko-translator.config.language": "翻译语言：%s",
@@ -108,6 +110,7 @@
   "neko-translator.sign.copied": "已复制告示牌内容",
   "key.neko-translator.translate_item": "翻译物品",
   "key.neko-translator.translate_sign": "翻译告示牌",
+  "key.neko-translator.translate_bossbar": "翻译 Bossbar",
   "key.neko-translator.copy_sign": "复制告示牌内容",
   "key.category.neko-translator.main": "Neko Translator"
 }

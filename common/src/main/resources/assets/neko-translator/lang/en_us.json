@@ -8,6 +8,8 @@
   "neko-translator.config.allow_others": "Let others translate through me",
   "neko-translator.config.use_others": "Translate through others",
   "neko-translator.config.auto_translate": "Auto translate",
+  "neko-translator.config.translate_titles": "Translate titles",
+  "neko-translator.config.translate_bossbar": "Translate Bossbar",
   "neko-translator.config.done": "Done",
   "neko-translator.config.model_none": "Not selected",
   "neko-translator.config.language": "Language: %s",
@@ -108,6 +110,7 @@
   "neko-translator.sign.copied": "Sign text copied",
   "key.neko-translator.translate_item": "Translate Item",
   "key.neko-translator.translate_sign": "Translate Sign",
+  "key.neko-translator.translate_bossbar": "Translate Bossbar",
   "key.neko-translator.copy_sign": "Copy Sign Text",
   "key.category.neko-translator.main": "Neko Translator"
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import me.avgt.s9e.client.book.BookTranslator
 import me.avgt.s9e.client.chat.ChatTranslator
+import me.avgt.s9e.client.hud.HudTextTranslator
 import me.avgt.s9e.client.item.ItemTranslator
 import me.avgt.s9e.client.peer.FabricPeerTransport
 import me.avgt.s9e.client.sign.SignTranslator
@@ -28,7 +29,8 @@ object Neko {
     private var initialized = false
 
     /** False until [init] finished; mixin callbacks can fire while the game is still starting. */
-    val ready: Boolean get() = initialized && this::items.isInitialized && this::signs.isInitialized
+    val ready: Boolean
+        get() = initialized && this::items.isInitialized && this::signs.isInitialized && this::hud.isInitialized
 
     lateinit var config: NekoConfig
         private set
@@ -47,6 +49,8 @@ object Neko {
     lateinit var items: ItemTranslator
         private set
     lateinit var signs: SignTranslator
+        private set
+    lateinit var hud: HudTextTranslator
         private set
 
     /** Latest model list fetched from the configured endpoint. */
@@ -88,6 +92,7 @@ object Neko {
         books = BookTranslator(config, coordinator)
         items = ItemTranslator(config, coordinator) { language() }
         signs = SignTranslator(config, coordinator) { language() }
+        hud = HudTextTranslator(config, coordinator) { language() }
 
         NekoLog.info("Neko Translator loaded (cache entries: ${cache.size()})")
     }

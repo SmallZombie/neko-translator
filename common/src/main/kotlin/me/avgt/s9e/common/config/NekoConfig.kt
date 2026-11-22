@@ -39,6 +39,14 @@ class NekoConfig {
     @Volatile
     var autoTranslate: Boolean = false
 
+    /** Always translate the title, subtitle and action bar messages; they cannot be toggled one by one. */
+    @Volatile
+    var translateTitles: Boolean = false
+
+    /** Master switch for boss bar names: they then follow [autoTranslate] and the `translate bossbar` key. */
+    @Volatile
+    var translateBossbar: Boolean = false
+
     /** Target language code, or [AUTO_LANGUAGE] to follow the client language. */
     @Volatile
     var targetLanguage: String = AUTO_LANGUAGE
@@ -69,6 +77,8 @@ class NekoConfig {
         root.addProperty("allowOthers", allowOthers)
         root.addProperty("useOthers", useOthers)
         root.addProperty("autoTranslate", autoTranslate)
+        root.addProperty("translateTitles", translateTitles)
+        root.addProperty("translateBossbar", translateBossbar)
         root.addProperty("targetLanguage", targetLanguage)
         root.addProperty("reasoningEffort", reasoningEffort)
         root.add("allowed", playersToJson(allowed))
@@ -84,6 +94,8 @@ class NekoConfig {
         allowOthers = root.bool("allowOthers", false)
         useOthers = root.bool("useOthers", false)
         autoTranslate = root.bool("autoTranslate", false)
+        translateTitles = root.bool("translateTitles", false)
+        translateBossbar = root.bool("translateBossbar", false)
         targetLanguage = root.string("targetLanguage", AUTO_LANGUAGE)
         reasoningEffort = root.string("reasoningEffort", "off")
         playersFromJson(root.getAsJsonArray("allowed"), allowed)

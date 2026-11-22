@@ -1,0 +1,190 @@
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: |
+            21
+            25
+          cache: gradle
+          cache-dependency-path: |
+            **/*.gradle*
+            **/gradle.properties
+            gradle/libs.versions.toml
+            gradle/wrapper/gradle-wrapper.properties
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build all Minecraft versions
+        run: |
+          ./gradlew \
+            -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
+            --no-daemon \
+            :fabric-26.3:build \
+            :fabric-26.2:build \
+            :fabric-26.1.2:build \
+            :fabric-1.21.11:build
+
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          GRADLE_VERSION="$(grep -E '^version=' gradle.properties | tail -n 1 | cut -d= -f2-)"
+
+          if [[ "$VERSION" != "$GRADLE_VERSION" ]]; then
+            echo "Tag version ($VERSION) does not match Gradle version ($GRADLE_VERSION)"
+            exit 1
+          fi
+
+          mkdir -p release-assets
+
+          stage_jar() {
+            local module="$1"
+            local mc_version="$2"
+            local -a jars
+
+            mapfile -t jars < <(
+              find "$module/build/libs" \
+                -maxdepth 1 \
+                -type f \
+                -name '*.jar' \
+                ! -name '*-dev.jar' \
+                ! -name '*-sources.jar' \
+                ! -name '*-javadoc.jar' \
+                2>/dev/null | sort
+            )
+
+            if (( ${#jars[@]} != 1 )); then
+              echo "Expected exactly one release JAR in $module/build/libs"
+              find "$module/build/libs" -maxdepth 1 -type f -print 2>/dev/null || true
+              exit 1
+            fi
+
+            EXPECTED="neko-translator-fabric-${VERSION}+mc${mc_version}.jar"
+
+            if [[ "$(basename "${jars[0]}")" != "$EXPECTED" ]]; then
+              echo "Unexpected artifact name: ${jars[0]}"
+              echo "Expected: $EXPECTED"
+              exit 1
+            fi
+
+            cp "${jars[0]}" release-assets/
+          }
+
+          stage_jar fabric-26.3 26.3
+          stage_jar fabric-26.2 26.2
+          stage_jar fabric-26.1.2 26.1.2
+          stage_jar fabric-1.21.11 1.21.11
+
+          ls -lh release-assets/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-jars
+          path: release-assets/*.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  create-draft:
+    name: Create Draft Release
+    runs-on: ubuntu-24.04
+    needs: build
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: release-jars
+          path: release-assets
+
+      - name: Create Draft Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          shopt -s nullglob
+          jars=(release-assets/*.jar)
+
+          if (( ${#jars[@]} == 0 )); then
+            echo "No JAR files found."
+            exit 1
+          fi
+
+          args=(
+            --draft
+            --verify-tag
+            --generate-notes
+            --title "Neko Translator ${GITHUB_REF_NAME}"
+          )
+
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+
+          gh release create \
+            "${GITHUB_REF_NAME}" \
+            "${jars[@]}" \
+            "${args[@]}"
+
+  publish-release:
+    name: Approve and Publish Release
+    runs-on: ubuntu-24.04
+    needs: create-draft
+
+    environment:
+      name: production
+
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Publish Draft Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release edit "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft=false
+
+      - name: Trigger Modrinth Publishing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh workflow run publish-modrinth.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f release_tag="$RELEASE_TAG"

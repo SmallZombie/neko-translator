@@ -30,6 +30,13 @@ loom {
 fun prop(key: String): String =
 	providers.gradleProperty("${project.name}.$key").orElse(providers.gradleProperty(key)).get()
 
+// Mod version + target Minecraft version
+version = "${rootProject.version}+mc${prop("minecraft_version")}"
+
+base {
+    archivesName.set("${rootProject.name}-fabric")
+}
+
 dependencies {
 	minecraft("com.mojang:minecraft:${prop("minecraft_version")}")
 	implementation("net.fabricmc:fabric-loader:${prop("loader_version")}")
@@ -76,8 +83,6 @@ tasks.jar {
 	val projectName = rootProject.name
 	inputs.property("projectName", projectName)
 
-	archiveBaseName = projectName
-
 	// The common module is not a mod on its own: its classes are merged into this jar.
 	// Its resources were already copied in by processResources, so skip them here.
 	from(commonMain.output) {
@@ -90,7 +95,6 @@ tasks.jar {
 }
 
 tasks.named<Jar>("sourcesJar") {
-	archiveBaseName = rootProject.name
 	from(commonMain.allSource)
 }
 

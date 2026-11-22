@@ -31,6 +31,13 @@ loom {
 fun prop(key: String): String =
 	providers.gradleProperty("${project.name}.$key").orElse(providers.gradleProperty(key)).get()
 
+// Mod version + target Minecraft version
+version = "${rootProject.version}+mc${prop("minecraft_version")}"
+
+base {
+    archivesName.set("${rootProject.name}-fabric")
+}
+
 dependencies {
 	minecraft("com.mojang:minecraft:${prop("minecraft_version")}")
 	// 1.21.x is still obfuscated, so official Mojang mappings are what the code is written against.
@@ -77,11 +84,6 @@ kotlin {
 }
 
 val commonMain = project(":common").extensions.getByType<SourceSetContainer>()["main"]
-
-// Keeps jar, remapJar and the source jars named like the other platform modules.
-base {
-	archivesName.set(rootProject.name)
-}
 
 tasks.jar {
 	val projectName = rootProject.name

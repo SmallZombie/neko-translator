@@ -1,0 +1,112 @@
+
+name: Publish Modrinth
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub Release tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modrinth-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Minecraft ${{ matrix.minecraft }}
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - minecraft: '1.21.11'
+          - minecraft: '26.1.2'
+          - minecraft: '26.2'
+          - minecraft: '26.3'
+
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          mkdir -p release-assets
+
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "neko-translator-*.jar" \
+            --dir release-assets
+
+      - name: Get Release Notes
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BODY="$(gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json body \
+            --jq '.body')"
+
+          DELIMITER="EOF_$(openssl rand -hex 16)"
+
+          {
+            echo "body<<$DELIMITER"
+            printf '%s\n' "$BODY"
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Modrinth version
+        id: metadata
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          MC_VERSION: ${{ matrix.minecraft }}
+        shell: bash
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+
+          if [[ "$VERSION" == *+* ]]; then
+            VERSION="${VERSION}.fabric.mc${MC_VERSION}"
+          else
+            VERSION="${VERSION}+fabric.mc${MC_VERSION}"
+          fi
+
+          if [[ "$VERSION" == *-alpha* ]]; then
+            VERSION_TYPE="alpha"
+          elif [[ "$VERSION" == *-beta* ]]; then
+            VERSION_TYPE="beta"
+          elif [[ "$VERSION" == *-* ]]; then
+            VERSION_TYPE="beta"
+          else
+            VERSION_TYPE="release"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_type=$VERSION_TYPE" >> "$GITHUB_OUTPUT"
+          echo "name=Neko Translator ${VERSION} (Fabric, Minecraft ${MC_VERSION})" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Modrinth
+        uses: Kira-NT/mc-publish@v3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+
+          modrinth-files: release-assets/neko-translator-fabric-*-mc${{ matrix.minecraft }}.jar
+
+          modrinth-name: ${{ steps.metadata.outputs.name }}
+          modrinth-version: ${{ steps.metadata.outputs.version }}
+          modrinth-version-type: ${{ steps.metadata.outputs.version_type }}
+          modrinth-changelog: ${{ steps.release_notes.outputs.body }}
+
+          modrinth-loaders: fabric
+          modrinth-game-versions: ${{ matrix.minecraft }}
+          modrinth-environment: client

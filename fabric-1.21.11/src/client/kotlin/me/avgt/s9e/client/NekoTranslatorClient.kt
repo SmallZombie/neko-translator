@@ -20,6 +20,7 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.util.FormattedCharSequence
+import net.minecraft.world.entity.Display
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.entity.SignText
 
@@ -133,6 +134,14 @@ object NekoTranslatorClient : ClientModInitializer {
         prepare: java.util.function.Function<Component, FormattedCharSequence>,
     ): Array<FormattedCharSequence> =
         if (Neko.ready) Neko.signs.display(signText, filtered, original) { prepare.apply(it) } else original
+
+    /** Called by the text display renderer to replace the layout of a translated display. */
+    @JvmStatic
+    fun textDisplayInfo(
+        entity: Display.TextDisplay,
+        splitter: Display.TextDisplay.LineSplitter,
+    ): Display.TextDisplay.CachedInfo =
+        if (Neko.ready) Neko.displays.info(entity, splitter) else entity.cacheDisplay(splitter)
 
     /**
      * Called by the [Screen] mixin before a screen handles a key. Returns true when the key was

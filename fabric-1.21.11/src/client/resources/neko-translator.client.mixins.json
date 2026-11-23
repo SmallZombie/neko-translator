@@ -16,7 +16,8 @@
 		"KeyboardHandlerMixin",
 		"LanguageManagerMixin",
 		"ScreenAccess",
-		"ScreenKeyMixin"
+		"ScreenKeyMixin",
+		"TextDisplayRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

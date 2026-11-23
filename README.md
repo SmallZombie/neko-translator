@@ -17,6 +17,7 @@ A real-time Minecraft translation mod powered by Large Language Models (LLMs).
 - **Titles & Subtitles**: Translate titles and subtitles displayed in the center of the screen.
 - **Action Bar**: Translate action bar messages displayed at the bottom of the screen.
 - **Boss Bars**: Translate boss bar display names.
+- **Text display entity**: Translates the text displayed by the display entity
 
 ### Delegated Translation
 

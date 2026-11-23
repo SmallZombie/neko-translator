@@ -12,6 +12,8 @@ import net.minecraft.client.gui.components.Checkbox
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
+import net.minecraft.util.FormattedCharSequence
 
 /**
  * The `/t config` settings page.
@@ -63,6 +65,11 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
         apiKeyBox.setMaxLength(1000)
         apiKeyBox.setHint(Component.literal("sk-..."))
         apiKeyBox.value = config.apiKey
+        // One star per character keeps the drawn length and the cursor math equal to the real value.
+        apiKeyBox.addFormatter { text, _ ->
+            if (apiKeyBox.isFocused) null
+            else FormattedCharSequence.forward("*".repeat(text.length), Style.EMPTY)
+        }
         addRenderableWidget(apiKeyBox)
 
         modelButton = addRenderableWidget(

@@ -47,6 +47,10 @@ class NekoConfig {
     @Volatile
     var translateBossbar: Boolean = false
 
+    /** Translate the text of display entities (holograms) that are close enough to be read. */
+    @Volatile
+    var translateDisplays: Boolean = false
+
     /** Target language code, or [AUTO_LANGUAGE] to follow the client language. */
     @Volatile
     var targetLanguage: String = AUTO_LANGUAGE
@@ -79,6 +83,7 @@ class NekoConfig {
         root.addProperty("autoTranslate", autoTranslate)
         root.addProperty("translateTitles", translateTitles)
         root.addProperty("translateBossbar", translateBossbar)
+        root.addProperty("translateDisplays", translateDisplays)
         root.addProperty("targetLanguage", targetLanguage)
         root.addProperty("reasoningEffort", reasoningEffort)
         root.add("allowed", playersToJson(allowed))
@@ -96,6 +101,7 @@ class NekoConfig {
         autoTranslate = root.bool("autoTranslate", false)
         translateTitles = root.bool("translateTitles", false)
         translateBossbar = root.bool("translateBossbar", false)
+        translateDisplays = root.bool("translateDisplays", false)
         targetLanguage = root.string("targetLanguage", AUTO_LANGUAGE)
         reasoningEffort = root.string("reasoningEffort", "off")
         playersFromJson(root.getAsJsonArray("allowed"), allowed)

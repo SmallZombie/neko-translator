@@ -10,6 +10,7 @@
   "neko-translator.config.auto_translate": "自动翻译",
   "neko-translator.config.translate_titles": "翻译标题",
   "neko-translator.config.translate_bossbar": "翻译 Bossbar",
+  "neko-translator.config.translate_displays": "翻译文本展示实体",
   "neko-translator.config.done": "完成",
   "neko-translator.config.model_none": "未选择",
   "neko-translator.config.language": "翻译语言：%s",

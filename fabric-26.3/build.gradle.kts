@@ -34,7 +34,7 @@ fun prop(key: String): String =
 version = "${rootProject.version}+mc${prop("minecraft_version")}"
 
 base {
-    archivesName.set("${rootProject.name}-fabric")
+	archivesName.set("${rootProject.name}-fabric")
 }
 
 dependencies {
@@ -43,7 +43,7 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation("net.fabricmc.fabric-api:fabric-api:${prop("fabric_api_version")}")
-    implementation("net.fabricmc:fabric-language-kotlin:${prop("fabric_kotlin_version")}")
+	implementation("net.fabricmc:fabric-language-kotlin:${prop("fabric_kotlin_version")}")
 
 	// Loader/version independent logic, merged into this jar below.
 	implementation(project(":common"))
@@ -51,10 +51,18 @@ dependencies {
 
 tasks.processResources {
 	val version = version
+	val description = prop("description")
+
 	inputs.property("version", version)
+	inputs.property("description", description)
 
 	filesMatching("fabric.mod.json") {
-		expand("version" to version)
+		expand(
+			mapOf(
+				"version" to version,
+				"description" to description,
+			)
+		)
 	}
 
 	// Shared assets (icon, language files) live in :common so every module ships the same files.
@@ -85,22 +93,22 @@ java {
 val commonMain = project(":common").extensions.getByType<SourceSetContainer>()["main"]
 
 tasks.jar {
-    val projectName = rootProject.name
-    inputs.property("projectName", projectName)
+	val projectName = rootProject.name
+	inputs.property("projectName", projectName)
 
-    // The common module is not a mod on its own: its classes are merged into this jar.
-    // Its resources were already copied in by processResources, so skip them here.
-    from(commonMain.output) {
-        exclude("assets/**")
-    }
+	// The common module is not a mod on its own: its classes are merged into this jar.
+	// Its resources were already copied in by processResources, so skip them here.
+	from(commonMain.output) {
+		exclude("assets/**")
+	}
 
-    from(rootProject.file("LICENSE")) {
-        rename { "${it}_$projectName" }
-    }
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName" }
+	}
 }
 
 tasks.named<Jar>("sourcesJar") {
-    from(commonMain.allSource)
+	from(commonMain.allSource)
 }
 
 // configure the maven publication

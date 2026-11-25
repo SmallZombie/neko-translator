@@ -3,14 +3,16 @@
 	"id": "neko-translator",
 	"version": "${version}",
 	"name": "Neko Translator",
-	"description": "Chat translation with a clickable [T] marker, local OpenAI-compatible API settings and optional peer-to-peer translation through players you trust.",
+	"description": "${description}",
 	"authors": [
-		"Neko"
+		"SmallZombie"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/"
+		"homepage": "https://modrinth.com/mod/neko-translator",
+		"issues": "https://github.com/SmallZombie/neko-translator/issues",
+		"sources": "https://github.com/SmallZombie/neko-translator"
 	},
-	"license": "CC0-1.0",
+	"license": "GPL-3.0",
 	"icon": "assets/neko-translator/icon.png",
 	"environment": "*",
 	"entrypoints": {

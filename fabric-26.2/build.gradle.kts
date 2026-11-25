@@ -34,7 +34,7 @@ fun prop(key: String): String =
 version = "${rootProject.version}+mc${prop("minecraft_version")}"
 
 base {
-    archivesName.set("${rootProject.name}-fabric")
+	archivesName.set("${rootProject.name}-fabric")
 }
 
 dependencies {
@@ -49,10 +49,18 @@ dependencies {
 
 tasks.processResources {
 	val version = version
+	val description = prop("description")
+
 	inputs.property("version", version)
+	inputs.property("description", description)
 
 	filesMatching("fabric.mod.json") {
-		expand("version" to version)
+		expand(
+			mapOf(
+				"version" to version,
+				"description" to description,
+			)
+		)
 	}
 
 	// Shared assets (icon, language files) live in :common so every module ships the same files.

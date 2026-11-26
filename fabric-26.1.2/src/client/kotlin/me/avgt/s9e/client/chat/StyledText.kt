@@ -58,6 +58,9 @@ object StyledText {
         }
     }
 
+    /** True for payloads that are neither blank nor a single character; those are never sent. */
+    fun isTranslatable(payload: String): Boolean = payload.length > 1 && payload.isNotBlank()
+
     fun toComponent(segments: List<StyledSegment>): Component {
         val result = Component.empty()
         for (segment in segments) {

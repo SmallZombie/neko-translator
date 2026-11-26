@@ -39,7 +39,7 @@ class SignTranslator(
     /** One sign line together with the styled segments it is built from. */
     private class Line(val component: Component, val segments: List<StyledSegment>, val needsTranslation: Boolean) {
         val payload: String = StyledText.payload(segments)
-        val requestable: Boolean = needsTranslation && payload.isNotBlank()
+        val requestable: Boolean = needsTranslation && StyledText.isTranslatable(payload)
     }
 
     private class Parsed(val lines: List<Line>, val payloads: List<String>, val key: String) {

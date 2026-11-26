@@ -116,7 +116,7 @@ class BookTranslator(
 
     private fun start(screen: BookViewScreen, session: Session) {
         if (session.state == State.TRANSLATING) return
-        if (session.payload.isBlank()) return
+        if (!StyledText.isTranslatable(session.payload)) return
 
         session.state = State.TRANSLATING
         session.showingOriginal = false

@@ -97,7 +97,7 @@ class DisplayTranslator(
         entry.group = null
 
         val payload = StyledText.payload(entry.segments)
-        if (payload.isBlank()) return entry
+        if (!StyledText.isTranslatable(payload)) return entry
 
         val language = language()
         // A translation is only pointless when the target is what the client already shows.

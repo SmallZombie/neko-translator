@@ -57,7 +57,7 @@ class ChatTranslator(
         val parts = StyledText.split(contents)
         val bodyText = StyledText.join(parts.body)
 
-        if (bodyText.isBlank() || parts.raw.trim().startsWith(PREFIX)) {
+        if (!StyledText.isTranslatable(bodyText) || parts.raw.trim().startsWith(PREFIX)) {
             pendingEntry = null
             pendingContent = null
             return contents

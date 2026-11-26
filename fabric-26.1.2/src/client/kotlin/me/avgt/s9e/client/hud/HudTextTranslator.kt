@@ -70,7 +70,7 @@ class HudTextTranslator(
 
         val segments = StyledText.flatten(component)
         val payload = StyledText.payload(segments)
-        if (payload.isBlank()) return null
+        if (!StyledText.isTranslatable(payload)) return null
 
         val language = language()
         // A translation is only pointless when the target is what the client already shows.

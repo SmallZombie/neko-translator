@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 import me.avgt.s9e.client.book.BookTranslator
 import me.avgt.s9e.client.chat.ChatTranslator
 import me.avgt.s9e.client.display.DisplayTranslator
+import me.avgt.s9e.client.entity.EntityNameTranslator
 import me.avgt.s9e.client.hud.HudTextTranslator
 import me.avgt.s9e.client.item.ItemTranslator
 import me.avgt.s9e.client.peer.FabricPeerTransport
@@ -36,6 +37,7 @@ object Neko {
             && this::signs.isInitialized
             && this::hud.isInitialized
             && this::displays.isInitialized
+            && this::names.isInitialized
 
     lateinit var config: NekoConfig
         private set
@@ -58,6 +60,8 @@ object Neko {
     lateinit var hud: HudTextTranslator
         private set
     lateinit var displays: DisplayTranslator
+        private set
+    lateinit var names: EntityNameTranslator
         private set
 
     /** Latest model list fetched from the configured endpoint. */
@@ -101,6 +105,7 @@ object Neko {
         signs = SignTranslator(config, coordinator) { language() }
         hud = HudTextTranslator(config, coordinator) { language() }
         displays = DisplayTranslator(config, coordinator) { language() }
+        names = EntityNameTranslator(config, coordinator) { language() }
 
         NekoLog.info("Neko Translator loaded (cache entries: ${cache.size()})")
     }

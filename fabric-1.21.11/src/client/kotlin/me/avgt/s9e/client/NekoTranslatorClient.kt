@@ -37,6 +37,9 @@ object NekoTranslatorClient : ClientModInitializer {
     /** Switches the visible boss bar names between original and translation. */
     private lateinit var translateBossbarKey: KeyMapping
 
+    /** Translates or restores the name tag of the entity the crosshair is on. */
+    private lateinit var translateEntityNameKey: KeyMapping
+
     /** The key is only handled while a screen is open, so its repeat and release are tracked by hand. */
     private var itemKeyScreen: Screen? = null
     private var itemKeyDown = false
@@ -46,6 +49,9 @@ object NekoTranslatorClient : ClientModInitializer {
 
     /** GLFW keycode of `G`. */
     private const val DEFAULT_SIGN_KEY = 71
+
+    /** GLFW keycode of `G`. The crosshair rests on a sign or on an entity, never on both. */
+    private const val DEFAULT_ENTITY_NAME_KEY = 71
 
     /** GLFW keycode of `;`. */
     private const val DEFAULT_COPY_KEY = 59
@@ -74,6 +80,10 @@ object NekoTranslatorClient : ClientModInitializer {
             KeyMapping("key.neko-translator.translate_bossbar", DEFAULT_BOSSBAR_KEY, category)
         )
 
+        translateEntityNameKey = KeyBindingHelper.registerKeyBinding(
+            KeyMapping("key.neko-translator.translate_entity_name", DEFAULT_ENTITY_NAME_KEY, category)
+        )
+
         ClientPlayNetworking.registerGlobalReceiver(RelayPayloads.ToClient.TYPE) { payload, _ ->
             Neko.peers.handleIncoming(payload.from(), payload.data())
         }
@@ -88,10 +98,12 @@ object NekoTranslatorClient : ClientModInitializer {
             NekoScreens.tick()
             Neko.items.tick()
             Neko.signs.tick()
+            Neko.names.tick()
 
-            // Key events reach a mapping only while no screen is open, so the sign keys cannot
-            // collide with the item key that lives inside container screens.
+            // Key events reach a mapping only while no screen is open, so the sign and entity
+            // keys cannot collide with the item key that lives inside container screens.
             if (translateSignKey.consumeClick()) Neko.signs.toggleAimed()
+            if (translateEntityNameKey.consumeClick()) Neko.names.toggleAimed()
             if (copySignKey.consumeClick()) Neko.signs.copyAimed()
             if (translateBossbarKey.consumeClick()) Neko.hud.toggleBossbar()
         }
@@ -134,6 +146,11 @@ object NekoTranslatorClient : ClientModInitializer {
         prepare: java.util.function.Function<Component, FormattedCharSequence>,
     ): Array<FormattedCharSequence> =
         if (Neko.ready) Neko.signs.display(signText, filtered, original) { prepare.apply(it) } else original
+
+    /** Called by the entity renderer to build the name tag that is drawn above an entity. */
+    @JvmStatic
+    fun entityName(component: Component): Component =
+        if (Neko.ready) Neko.names.nameTag(component) else component
 
     /** Called by the text display renderer to replace the layout of a translated display. */
     @JvmStatic

@@ -10,6 +10,7 @@
 		"ChatComponentAccess",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
+		"EntityRendererMixin",
 		"HudMixin",
 		"HudTextMixin",
 		"ItemStackTooltipMixin",

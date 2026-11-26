@@ -11,8 +11,10 @@ import me.avgt.s9e.common.translate.TranslationCoordinator
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.gui.screens.inventory.MerchantScreen
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.inventory.MerchantMenu
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 
@@ -71,6 +73,10 @@ class ItemTranslator(
     private var hoverSlot: Slot? = null
     private var hoverStack: ItemStack? = null
 
+    /** The merchant screen whose offers were already queued, and how many offers it had then. */
+    private var merchant: MerchantScreen? = null
+    private var merchantOffers = 0
+
     /** Adds the `[T]` marker and, when available, the translation to a tooltip. */
     fun decorate(lines: List<Component>): List<Component> {
         if (synthetic.get() || !config.enabled || lines.isEmpty()) return lines
@@ -105,7 +111,7 @@ class ItemTranslator(
         return name.copy().append(Component.literal(" ")).append(entry?.marker() ?: LineGroup.idleMarker())
     }
 
-    /** Triggered once per client tick: noticed hovers and the item held in the main hand. */
+    /** Triggered once per client tick: notices hovers, the held item and an open merchant screen. */
     fun tick() {
         val minecraft = Minecraft.getInstance()
         val player = minecraft.player
@@ -129,6 +135,7 @@ class ItemTranslator(
         }
 
         trackHover()
+        preloadMerchant(minecraft, player)
     }
 
     /** Handles the `translate item` key: translate, show the original, or retry. */
@@ -177,6 +184,8 @@ class ItemTranslator(
     }
 
     private fun startIfIdle(stack: ItemStack) {
+        if (stack.isEmpty) return
+
         val parsed = snapshot(stack).parsed
         if (!parsed.hasWork) return
 
@@ -187,6 +196,31 @@ class ItemTranslator(
     private fun clearHover() {
         hoverSlot = null
         hoverStack = null
+    }
+
+    /**
+     * Queues every offer of an open merchant screen, so the trade list is translated without
+     * hovering it. The list grows when the villager levels up, so it is read again when the
+     * offer count changes.
+     */
+    private fun preloadMerchant(minecraft: Minecraft, player: Player) {
+        val screen = minecraft.gui.screen()
+        if (screen !is MerchantScreen) {
+            merchant = null
+            return
+        }
+
+        val menu = player.containerMenu as? MerchantMenu ?: return
+        val offers = menu.offers
+        if (screen === merchant && offers.size == merchantOffers) return
+
+        merchant = screen
+        merchantOffers = offers.size
+        for (offer in offers) {
+            startIfIdle(offer.costA)
+            startIfIdle(offer.costB)
+            startIfIdle(offer.result)
+        }
     }
 
     private fun hoveredSlot(): Slot? {

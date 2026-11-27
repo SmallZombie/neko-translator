@@ -1,0 +1,29 @@
+{
+	"required": true,
+	"package": "me.avgt.s9e.client.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"client": [
+		"AbstractContainerScreenAccess",
+		"BookViewScreenMixin",
+		"BossHealthOverlayMixin",
+		"ChatComponentAccess",
+		"ChatComponentMixin",
+		"EntityRendererMixin",
+		"HudMixin",
+		"HudTextMixin",
+		"ItemStackTooltipMixin",
+		"KeyboardHandlerMixin",
+		"LanguageManagerMixin",
+		"ScreenAccess",
+		"ScreenClickMixin",
+		"ScreenKeyMixin",
+		"SignRendererMixin",
+		"TextDisplayRendererMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

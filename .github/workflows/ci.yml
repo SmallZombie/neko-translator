@@ -35,6 +35,7 @@ jobs:
         with:
           distribution: microsoft
           java-version: |
+            17
             21
             25
           cache: gradle
@@ -50,7 +51,7 @@ jobs:
       - name: Build all projects
         run: |
           ./gradlew \
-            -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
+            -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
             --no-daemon \
             --stacktrace \
             build

@@ -26,6 +26,7 @@ jobs:
         with:
           distribution: microsoft
           java-version: |
+            17
             21
             25
           cache: gradle
@@ -41,7 +42,7 @@ jobs:
       - name: Build all Minecraft versions
         run: |
           ./gradlew \
-            -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
+            -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
             --no-daemon \
             :fabric-26.3:build \
             :fabric-26.2:build \

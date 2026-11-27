@@ -15,18 +15,21 @@ dependencies {
 	compileOnly("org.slf4j:slf4j-api:2.0.17")
 }
 
+// 26.3 requires java 25
+// 1.21.11 requires java 21
+// 1.20.4 requires java 17
 tasks.withType<JavaCompile>().configureEach {
-	options.release = 21
+	options.release = 17
 }
 
 kotlin {
-    jvmToolchain(21)
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_21
-    }
+	jvmToolchain(17)
+	compilerOptions {
+		jvmTarget = JvmTarget.JVM_17
+	}
 }
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
 }

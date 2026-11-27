@@ -101,6 +101,9 @@ jobs:
           stage_jar fabric-26.2 26.2
           stage_jar fabric-26.1.2 26.1.2
           stage_jar fabric-1.21.11 1.21.11
+          stage_jar fabric-1.21 1.21
+          stage_jar fabric-1.20.4 1.20.4
+          stage_jar fabric-1.20.1 1.20.1
 
           ls -lh release-assets/
 

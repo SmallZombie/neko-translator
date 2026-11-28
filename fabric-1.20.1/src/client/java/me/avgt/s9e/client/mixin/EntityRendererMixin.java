@@ -3,6 +3,7 @@ package me.avgt.s9e.client.mixin;
 import me.avgt.s9e.client.NekoTranslatorClient;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
@@ -26,6 +27,9 @@ public abstract class EntityRendererMixin {
 			)
 	)
 	private void neko$translatedNameTag(final Args args) {
+		// Player names are proper nouns and are never translated. The first argument is the entity.
+		if (args.get(0) instanceof Player) return;
+
 		Component original = args.get(1);
 		args.set(1, NekoTranslatorClient.entityName(original));
 	}

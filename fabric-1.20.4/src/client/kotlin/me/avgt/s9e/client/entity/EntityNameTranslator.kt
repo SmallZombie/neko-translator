@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ItemFrame
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.EntityHitResult
 
 /**
@@ -96,10 +97,13 @@ class EntityNameTranslator(
         dwell = 0
     }
 
-    /** The entity the crosshair is on; an item frame draws the name of its item instead. */
+    /**
+     * The entity the crosshair is on. Player names are never translated and an item frame draws
+     * the name of its item instead.
+     */
     private fun aimedEntity(minecraft: Minecraft): Entity? {
         val entity = (minecraft.hitResult as? EntityHitResult)?.entity ?: return null
-        return if (entity is ItemFrame) null else entity
+        return if (entity is ItemFrame || entity is Player) null else entity
     }
 
     /** The unit of one name tag, or null when the text is blank or already localized. */

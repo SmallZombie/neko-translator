@@ -58,8 +58,19 @@ object StyledText {
         }
     }
 
-    /** True for payloads that are neither blank nor a single character; those are never sent. */
-    fun isTranslatable(payload: String): Boolean = payload.length > 1 && payload.isNotBlank()
+    /**
+     * True when a translation can change the payload.
+     * The following text will be filtered:
+     * - When the text contains only a single character
+     * - When the text contains only digits
+     * - When the text contains only the same character repeated
+     */
+    fun isTranslatable(payload: String): Boolean {
+        val text = stripMarkers(payload).trim()
+        if (text.length <= 1) return false
+        if (text.none { it.isLetter() }) return false
+        return text.any { it != text[0] }
+    }
 
     fun toComponent(segments: List<StyledSegment>): Component {
         val result = Component.empty()

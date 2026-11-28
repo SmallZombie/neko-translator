@@ -2,6 +2,7 @@ package me.avgt.s9e.client.gui
 
 import me.avgt.s9e.client.Neko
 import me.avgt.s9e.client.util.toComponent
+import me.avgt.s9e.common.config.NekoConfig
 import me.avgt.s9e.common.lang.LanguageNames
 import me.avgt.s9e.common.log.NekoLog
 import me.avgt.s9e.common.text.NekoText
@@ -252,22 +253,14 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
         }
     }
 
-    private fun thinkingLabel(): Component {
-        val level = when (Neko.config.reasoningEffort) {
-            "low", "medium", "high" -> Neko.config.reasoningEffort
-            else -> "off"
-        }
-        return Component.translatable(
-            "neko-translator.config.thinking",
-            Component.translatable("neko-translator.config.thinking.$level"),
-        )
-    }
+    private fun thinkingLabel(): Component = Component.translatable(
+        "neko-translator.config.thinking",
+        Component.literal(Neko.config.reasoningEffort),
+    )
 
-    private fun nextThinkingLevel(current: String): String = when (current) {
-        "low" -> "medium"
-        "medium" -> "high"
-        "high" -> "off"
-        else -> "low"
+    private fun nextThinkingLevel(current: String): String {
+        val levels = NekoConfig.REASONING_LEVELS
+        return levels[(levels.indexOf(current) + 1) % levels.size]
     }
 
     companion object {

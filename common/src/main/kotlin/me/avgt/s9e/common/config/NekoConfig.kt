@@ -55,9 +55,9 @@ class NekoConfig {
     @Volatile
     var targetLanguage: String = AUTO_LANGUAGE
 
-    /** Model thinking level: off / low / medium / high. Off by default. */
+    /** Model thinking level, one of [REASONING_LEVELS]; always sent to the API as `reasoning_effort`. */
     @Volatile
-    var reasoningEffort: String = "off"
+    var reasoningEffort: String = "none"
 
     /** Players I allowed to obtain translations through me. uuid -> last known name. */
     val allowed: LinkedHashMap<UUID, String> = LinkedHashMap()
@@ -103,13 +103,18 @@ class NekoConfig {
         translateBossbar = root.bool("translateBossbar", false)
         translateDisplays = root.bool("translateDisplays", false)
         targetLanguage = root.string("targetLanguage", AUTO_LANGUAGE)
-        reasoningEffort = root.string("reasoningEffort", "off")
+        reasoningEffort = root.string("reasoningEffort", "none")
+        // Config files written before the level was always sent spell "none" as "off".
+        if (reasoningEffort == "off") reasoningEffort = "none"
         playersFromJson(root.getAsJsonArray("allowed"), allowed)
         playersFromJson(root.getAsJsonArray("linked"), linked)
     }
 
     companion object {
         const val AUTO_LANGUAGE = "auto"
+
+        /** Thinking levels the API accepts, in the order the settings button cycles them. */
+        val REASONING_LEVELS = listOf("none", "minimal", "low", "medium", "high", "xhigh", "max")
 
         fun load(path: Path): NekoConfig {
             val config = NekoConfig()

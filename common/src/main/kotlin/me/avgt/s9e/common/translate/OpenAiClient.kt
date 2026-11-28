@@ -33,7 +33,7 @@ class OpenAiClient {
         model: String,
         text: String,
         languageCode: String,
-        reasoningEffort: String = REASONING_OFF,
+        reasoningEffort: String,
     ): TranslationResult {
         if (baseUrl.isBlank()) return TranslationResult.Err(NekoText.of("neko-translator.error.api_base_empty"))
         if (model.isBlank()) return TranslationResult.Err(NekoText.of("neko-translator.error.model_empty"))
@@ -44,10 +44,8 @@ class OpenAiClient {
         payload.addProperty("model", model)
         payload.addProperty("stream", false)
         payload.addProperty("temperature", 0.2)
-
-        if (reasoningEffort != REASONING_OFF) {
-            payload.addProperty("reasoning_effort", reasoningEffort)
-        }
+        // Always sent: without it the server picks its own default instead of "none".
+        payload.addProperty("reasoning_effort", reasoningEffort)
 
         val messages = JsonArray()
         messages.add(message("system", systemPrompt(languageName, languageCode)))
@@ -215,9 +213,6 @@ class OpenAiClient {
     companion object {
         /** Sentinel the model is instructed to return when no translation is needed. */
         const val SKIP_TOKEN = "<|skip|>"
-
-        /** Value of the "thinking level" setting that disables reasoning entirely. */
-        const val REASONING_OFF = "off"
 
         fun normalizeBase(baseUrl: String): String {
             var base = baseUrl.trim()

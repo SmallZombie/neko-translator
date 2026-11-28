@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.KeyMapping
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.MultiLineEditBox
@@ -22,6 +23,7 @@ import net.minecraft.util.FormattedCharSequence
 import net.minecraft.world.entity.Display
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.entity.SignText
+import net.minecraft.world.scores.Objective
 
 object NekoTranslatorClient : ClientModInitializer {
     /** Translates or restores the item under the mouse while a container screen is open. */
@@ -152,6 +154,14 @@ object NekoTranslatorClient : ClientModInitializer {
     @JvmStatic
     fun entityName(component: Component): Component =
         if (Neko.ready) Neko.names.nameTag(component) else component
+
+    /**
+     * Called by the HUD mixin before the sidebar scoreboard is drawn. Returns true when the mod
+     * drew the sidebar itself, so vanilla must skip its own pass.
+     */
+    @JvmStatic
+    fun scoreboard(graphics: GuiGraphics, objective: Objective): Boolean =
+        Neko.ready && Neko.scoreboards.display(graphics, objective)
 
     /** Called by the text display renderer to replace the layout of a translated display. */
     @JvmStatic

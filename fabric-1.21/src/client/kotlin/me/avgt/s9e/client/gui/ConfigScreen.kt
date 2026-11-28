@@ -89,7 +89,7 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
         addRenderableWidget(
             Checkbox.builder(Component.translatable("neko-translator.config.allow_others"), font)
                 .pos(left, panelTop + 134)
-                .maxWidth(contentWidth)
+                .maxWidth(contentWidth / 2)
                 .selected(config.allowOthers)
                 .onValueChange { _, value -> config.allowOthers = value; Neko.saveConfig() }
                 .build()
@@ -97,8 +97,8 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
 
         addRenderableWidget(
             Checkbox.builder(Component.translatable("neko-translator.config.use_others"), font)
-                .pos(left, panelTop + 152)
-                .maxWidth(contentWidth)
+                .pos(left + contentWidth / 2, panelTop + 134)
+                .maxWidth(contentWidth / 2)
                 .selected(config.useOthers)
                 .onValueChange { _, value -> config.useOthers = value; Neko.saveConfig() }
                 .build()
@@ -106,7 +106,7 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
 
         addRenderableWidget(
             Checkbox.builder(Component.translatable("neko-translator.config.auto_translate"), font)
-                .pos(left, panelTop + 170)
+                .pos(left, panelTop + 152)
                 .maxWidth(contentWidth / 2)
                 .selected(config.autoTranslate)
                 .onValueChange { _, value -> config.autoTranslate = value; Neko.saveConfig() }
@@ -115,7 +115,7 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
 
         addRenderableWidget(
             Checkbox.builder(Component.translatable("neko-translator.config.translate_displays"), font)
-                .pos(left + contentWidth / 2, panelTop + 170)
+                .pos(left + contentWidth / 2, panelTop + 152)
                 .maxWidth(contentWidth / 2)
                 .selected(config.translateDisplays)
                 .onValueChange { _, value -> config.translateDisplays = value; Neko.saveConfig() }
@@ -124,7 +124,7 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
 
         addRenderableWidget(
             Checkbox.builder(Component.translatable("neko-translator.config.translate_titles"), font)
-                .pos(left, panelTop + 188)
+                .pos(left, panelTop + 170)
                 .maxWidth(contentWidth / 2)
                 .selected(config.translateTitles)
                 .onValueChange { _, value -> config.translateTitles = value; Neko.saveConfig() }
@@ -133,10 +133,19 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
 
         addRenderableWidget(
             Checkbox.builder(Component.translatable("neko-translator.config.translate_bossbar"), font)
-                .pos(left + contentWidth / 2, panelTop + 188)
+                .pos(left + contentWidth / 2, panelTop + 170)
                 .maxWidth(contentWidth / 2)
                 .selected(config.translateBossbar)
                 .onValueChange { _, value -> config.translateBossbar = value; Neko.saveConfig() }
+                .build()
+        )
+
+        addRenderableWidget(
+            Checkbox.builder(Component.translatable("neko-translator.config.translate_scoreboard"), font)
+                .pos(left, panelTop + 188)
+                .maxWidth(contentWidth)
+                .selected(config.translateScoreboard)
+                .onValueChange { _, value -> config.translateScoreboard = value; Neko.saveConfig() }
                 .build()
         )
 

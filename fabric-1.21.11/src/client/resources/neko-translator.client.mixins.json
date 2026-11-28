@@ -16,6 +16,7 @@
 		"ItemStackTooltipMixin",
 		"KeyboardHandlerMixin",
 		"LanguageManagerMixin",
+		"ScoreboardMixin",
 		"ScreenAccess",
 		"ScreenKeyMixin",
 		"TextDisplayRendererMixin"

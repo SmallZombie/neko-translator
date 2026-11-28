@@ -12,6 +12,7 @@ import me.avgt.s9e.client.entity.EntityNameTranslator
 import me.avgt.s9e.client.hud.HudTextTranslator
 import me.avgt.s9e.client.item.ItemTranslator
 import me.avgt.s9e.client.peer.FabricPeerTransport
+import me.avgt.s9e.client.scoreboard.ScoreboardTranslator
 import me.avgt.s9e.client.sign.SignTranslator
 import me.avgt.s9e.client.util.Feed
 import me.avgt.s9e.common.cache.TranslationCache
@@ -38,6 +39,7 @@ object Neko {
             && this::hud.isInitialized
             && this::displays.isInitialized
             && this::names.isInitialized
+            && this::scoreboards.isInitialized
 
     lateinit var config: NekoConfig
         private set
@@ -62,6 +64,8 @@ object Neko {
     lateinit var displays: DisplayTranslator
         private set
     lateinit var names: EntityNameTranslator
+        private set
+    lateinit var scoreboards: ScoreboardTranslator
         private set
 
     /** Latest model list fetched from the configured endpoint. */
@@ -106,6 +110,7 @@ object Neko {
         hud = HudTextTranslator(config, coordinator) { language() }
         displays = DisplayTranslator(config, coordinator) { language() }
         names = EntityNameTranslator(config, coordinator) { language() }
+        scoreboards = ScoreboardTranslator(config, coordinator) { language() }
 
         NekoLog.info("Neko Translator loaded (cache entries: ${cache.size()})")
     }

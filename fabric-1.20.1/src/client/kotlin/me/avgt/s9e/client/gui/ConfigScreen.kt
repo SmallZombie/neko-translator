@@ -89,36 +89,43 @@ class ConfigScreen : Screen(Component.translatable("neko-translator.config.title
         )
 
         addRenderableWidget(
-            checkbox(left, panelTop + 152, Component.translatable("neko-translator.config.use_others"), config.useOthers) { value ->
+            checkbox(left + contentWidth / 2, panelTop + 134, Component.translatable("neko-translator.config.use_others"), config.useOthers) { value ->
                 config.useOthers = value
                 Neko.saveConfig()
             }
         )
 
         addRenderableWidget(
-            checkbox(left, panelTop + 170, Component.translatable("neko-translator.config.auto_translate"), config.autoTranslate) { value ->
+            checkbox(left, panelTop + 152, Component.translatable("neko-translator.config.auto_translate"), config.autoTranslate) { value ->
                 config.autoTranslate = value
                 Neko.saveConfig()
             }
         )
 
         addRenderableWidget(
-            checkbox(left + contentWidth / 2, panelTop + 170, Component.translatable("neko-translator.config.translate_displays"), config.translateDisplays) { value ->
+            checkbox(left + contentWidth / 2, panelTop + 152, Component.translatable("neko-translator.config.translate_displays"), config.translateDisplays) { value ->
                 config.translateDisplays = value
                 Neko.saveConfig()
             }
         )
 
         addRenderableWidget(
-            checkbox(left, panelTop + 188, Component.translatable("neko-translator.config.translate_titles"), config.translateTitles) { value ->
+            checkbox(left, panelTop + 170, Component.translatable("neko-translator.config.translate_titles"), config.translateTitles) { value ->
                 config.translateTitles = value
                 Neko.saveConfig()
             }
         )
 
         addRenderableWidget(
-            checkbox(left + contentWidth / 2, panelTop + 188, Component.translatable("neko-translator.config.translate_bossbar"), config.translateBossbar) { value ->
+            checkbox(left + contentWidth / 2, panelTop + 170, Component.translatable("neko-translator.config.translate_bossbar"), config.translateBossbar) { value ->
                 config.translateBossbar = value
+                Neko.saveConfig()
+            }
+        )
+
+        addRenderableWidget(
+            checkbox(left, panelTop + 188, Component.translatable("neko-translator.config.translate_scoreboard"), config.translateScoreboard) { value ->
+                config.translateScoreboard = value
                 Neko.saveConfig()
             }
         )

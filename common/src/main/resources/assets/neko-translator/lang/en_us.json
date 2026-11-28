@@ -11,6 +11,7 @@
   "neko-translator.config.translate_titles": "Translate titles",
   "neko-translator.config.translate_bossbar": "Translate Bossbar",
   "neko-translator.config.translate_displays": "Translate text displays",
+  "neko-translator.config.translate_scoreboard": "Translate scoreboard",
   "neko-translator.config.done": "Done",
   "neko-translator.config.model_none": "Not selected",
   "neko-translator.config.language": "Language: %s",

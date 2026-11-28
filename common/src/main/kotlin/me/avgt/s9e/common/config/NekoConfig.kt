@@ -51,6 +51,10 @@ class NekoConfig {
     @Volatile
     var translateDisplays: Boolean = false
 
+    /** Master switch for the sidebar scoreboard: its title and every line, independent of [autoTranslate]. */
+    @Volatile
+    var translateScoreboard: Boolean = false
+
     /** Target language code, or [AUTO_LANGUAGE] to follow the client language. */
     @Volatile
     var targetLanguage: String = AUTO_LANGUAGE
@@ -84,6 +88,7 @@ class NekoConfig {
         root.addProperty("translateTitles", translateTitles)
         root.addProperty("translateBossbar", translateBossbar)
         root.addProperty("translateDisplays", translateDisplays)
+        root.addProperty("translateScoreboard", translateScoreboard)
         root.addProperty("targetLanguage", targetLanguage)
         root.addProperty("reasoningEffort", reasoningEffort)
         root.add("allowed", playersToJson(allowed))
@@ -102,6 +107,7 @@ class NekoConfig {
         translateTitles = root.bool("translateTitles", false)
         translateBossbar = root.bool("translateBossbar", false)
         translateDisplays = root.bool("translateDisplays", false)
+        translateScoreboard = root.bool("translateScoreboard", false)
         targetLanguage = root.string("targetLanguage", AUTO_LANGUAGE)
         reasoningEffort = root.string("reasoningEffort", "none")
         // Config files written before the level was always sent spell "none" as "off".

@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import me.avgt.s9e.common.cache.TranslationCache
 import me.avgt.s9e.common.config.NekoConfig
+import me.avgt.s9e.common.debug.TranslationDebug
 import me.avgt.s9e.common.log.NekoLog
 import me.avgt.s9e.common.peer.PeerManager
 import me.avgt.s9e.common.text.NekoText
@@ -66,7 +67,7 @@ class TranslationCoordinator(
 
     /** Serves a request coming from another player. Always uses the local API so peer chains cannot loop. */
     fun provideForPeer(text: String, language: String): CompletableFuture<TranslationResult> {
-        return localJob(TranslationCache.key(text, language), text, language)
+        return localJob(TranslationCache.key(text, language), text, language, "serve")
     }
 
     /** Forgets a cached failure so the next attempt really hits the network. */
@@ -86,6 +87,8 @@ class TranslationCoordinator(
                     TranslationResult.Err(NekoText.of("neko-translator.error.peers_offline"))
                 )
 
+            val job = TranslationDebug.begin(key, text, language, "peer")
+
             return manager.translateViaPeer(peer.first, text, language).handle { result, error ->
                 if (error != null) {
                     NekoLog.debug("Peer translation failed: ${error.javaClass.simpleName}: ${error.message}")
@@ -94,7 +97,7 @@ class TranslationCoordinator(
                 val answered = result ?: TranslationResult.Err(NekoText.of("neko-translator.error.peer_failed"))
                 if (answered is TranslationResult.Ok) remember(key, answered.text)
                 answered
-            }
+            }.whenComplete { _, _ -> TranslationDebug.end(key) }
         }
 
         if (!config.hasLocalApi()) {
@@ -106,7 +109,12 @@ class TranslationCoordinator(
         return localJob(key, text, language)
     }
 
-    private fun localJob(key: String, text: String, language: String): CompletableFuture<TranslationResult> {
+    private fun localJob(
+        key: String,
+        text: String,
+        language: String,
+        kind: String = "api",
+    ): CompletableFuture<TranslationResult> {
         cache.get(key)?.let { return CompletableFuture.completedFuture(TranslationResult.Ok(it)) }
 
         failures[key]?.let { failure ->
@@ -122,7 +130,9 @@ class TranslationCoordinator(
         val previous = apiJobs.putIfAbsent(key, promise)
         if (previous != null) return previous
 
+        val job = TranslationDebug.begin(key, text, language, kind)
         executor.execute {
+            job.start()
             val result = try {
                 http.translate(config.apiBaseUrl, config.apiKey, config.model, text, language, config.reasoningEffort)
             } catch (t: Throwable) {
@@ -137,6 +147,7 @@ class TranslationCoordinator(
 
             promise.complete(result)
             apiJobs.remove(key, promise)
+            TranslationDebug.end(key)
         }
 
         return promise

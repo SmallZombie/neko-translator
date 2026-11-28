@@ -10,6 +10,8 @@
 		"ChatComponentAccess",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
+		"DebugScreenEntriesMixin",
+		"DebugScreenEntryListMixin",
 		"EntityRendererMixin",
 		"HudMixin",
 		"HudTextMixin",

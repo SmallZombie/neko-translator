@@ -62,9 +62,14 @@ class OpenAiClient {
             .POST(HttpRequest.BodyPublishers.ofString(payload.toString(), StandardCharsets.UTF_8))
             .build()
 
+        // Printed only while the debug screen switch is on.
+        if (requestLogging) NekoLog.info("[neko] -> POST $endpoint $payload")
+        val startedAt = System.nanoTime()
+
         return try {
             val response = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
             val body = response.body() ?: ""
+            if (requestLogging) NekoLog.info("[neko] <- ${response.statusCode()} ${elapsedMillis(startedAt)}ms $body")
             if (response.statusCode() !in 200..299) {
                 TranslationResult.Err(httpError("neko-translator.error.http", response.statusCode(), body))
             } else {
@@ -82,12 +87,16 @@ class OpenAiClient {
                 }
             }
         } catch (t: HttpTimeoutException) {
+            logFailure(t)
             TranslationResult.Err(NekoText.of("neko-translator.error.timeout"))
         } catch (t: ConnectException) {
+            logFailure(t)
             TranslationResult.Err(NekoText.of("neko-translator.error.connect"))
         } catch (t: UnknownHostException) {
+            logFailure(t)
             TranslationResult.Err(NekoText.of("neko-translator.error.unknown_host"))
         } catch (t: InterruptedException) {
+            logFailure(t)
             Thread.currentThread().interrupt()
             TranslationResult.Err(NekoText.of("neko-translator.error.interrupted"))
         } catch (t: Throwable) {
@@ -145,6 +154,13 @@ class OpenAiClient {
         obj.addProperty("content", content)
         return obj
     }
+
+    /** Prints the failure of a request next to its request line, while the traffic log is on. */
+    private fun logFailure(t: Throwable) {
+        if (requestLogging) NekoLog.info("[neko] <- ${t.javaClass.simpleName}: ${t.message}")
+    }
+
+    private fun elapsedMillis(startedAt: Long): Long = (System.nanoTime() - startedAt) / 1_000_000
 
     private fun extractContent(body: String): String? {
         val root = try {
@@ -211,6 +227,13 @@ class OpenAiClient {
     }
 
     companion object {
+        /**
+         * Switch of the `neko-translator:translation_requests` debug screen entry: prints every
+         * request and its response to the console. Set by the client, off in every other version.
+         */
+        @Volatile
+        var requestLogging: Boolean = false
+
         /** Sentinel the model is instructed to return when no translation is needed. */
         const val SKIP_TOKEN = "<|skip|>"
 
